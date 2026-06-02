@@ -148,8 +148,10 @@ def test_metric_mapper_handles_door_contact():
         "door_contact",
         {"door_state": True, "periodic_open_events": 2, "total_open_events": 10},
     )
+    # Booleans are coerced to 1/0 at the Sensgreen boundary so binary
+    # metrics ride on the same numeric payload format as everything else.
     assert out == {
-        "open_status": True,
+        "open_status": 1,
         "periodic_counter_in": 2,
         "total_counter_in": 10,
     }

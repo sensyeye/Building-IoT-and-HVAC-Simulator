@@ -261,6 +261,11 @@ class SensgreenMetricMapper:
                     f"Duplicate Sensgreen metric '{target}' produced while "
                     f"mapping sensor_type='{sensor_type}' (key='{key}')"
                 )
+            # Coerce booleans to integer 1/0 — Sensgreen's payload format
+            # expects numeric values for binary metrics (door open_status,
+            # presence/occupancy, etc.) rather than JSON true/false.
+            if isinstance(value, bool):
+                value = 1 if value else 0
             mapped[target] = value
 
         return mapped

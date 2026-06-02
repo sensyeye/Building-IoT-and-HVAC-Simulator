@@ -127,3 +127,28 @@ def test_supported_sensor_types_listed():
     types = SensgreenMetricMapper.supported_sensor_types()
     for t in ("iaq", "energy_meter", "people_counter", "entry_exit_counter", "hvac"):
         assert t in types
+
+
+def test_booleans_coerced_to_int_for_sensgreen_payload():
+    """Sensgreen's wire format expects numeric 1/0 for binary metrics,
+    not JSON ``true``/``false``. The mapper must coerce booleans at the
+    integration boundary so transports never publish ``true``/``false``."""
+
+    m = SensgreenMetricMapper()
+
+    # Door contact: door_state True/False → open_status 1/0
+    out_open = m.map("door_contact", {"door_state": True})
+    out_closed = m.map("door_contact", {"door_state": False})
+    assert out_open == {"open_status": 1}
+    assert out_closed == {"open_status": 0}
+    assert isinstance(out_open["open_status"], int)
+    assert not isinstance(out_open["open_status"], bool)
+
+    # Occupancy / people counter: occupancy True/False → occupancy 1/0
+    out_occ = m.map("occupancy_sensor", {"occupancy": True})
+    assert out_occ == {"occupancy": 1}
+    assert not isinstance(out_occ["occupancy"], bool)
+
+    # Numeric values pass through unchanged
+    out_num = m.map("iaq", {"temperature": 22.5, "co2": 600})
+    assert out_num == {"temperature": 22.5, "co2": 600}
