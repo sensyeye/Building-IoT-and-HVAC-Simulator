@@ -262,6 +262,57 @@ tests/                     # 513 tests
 
 ---
 
+## Docker
+
+A multi-stage `Dockerfile` ships the FastAPI web UI + JSON API on port `8000`. Generated artifacts and project JSONs are persisted via volume mounts.
+
+### Build & run with Docker
+
+```bash
+docker build -t building-iot-simulator:latest .
+
+docker run -d --name building-iot-simulator \
+  -p 8000:8000 \
+  -v "$PWD/data:/app/data" \
+  -v "$PWD/outputs:/app/outputs" \
+  -v "$PWD/configs:/app/configs:ro" \
+  building-iot-simulator:latest
+```
+
+Open <http://localhost:8000/>.
+
+### docker compose (recommended)
+
+```bash
+docker compose up -d
+docker compose logs -f
+docker compose down
+```
+
+### Run a CLI command inside the image
+
+```bash
+docker run --rm \
+  -v "$PWD/configs:/app/configs:ro" \
+  -v "$PWD/outputs:/app/outputs" \
+  building-iot-simulator:latest \
+  python -c "from simulator.main import main; main([
+    'generate-history','--config','configs/realistic_mixed_use.yaml',
+    '--start','2026-06-02T06:00:00Z','--end','2026-06-02T23:00:00Z',
+    '--output-dir','outputs/realistic_day',
+  ])"
+```
+
+### Image notes
+
+- Base: `python:3.11-slim` (multi-stage, venv copied to runtime)
+- Runs as non-root `app` user
+- Built-in `HEALTHCHECK` against `/health`
+- `.dockerignore` excludes `.venv`, `data/`, `outputs/`, tests, caches → ~slim final image
+- Override `CMD` to swap between web UI and one-shot CLI runs
+
+---
+
 ## Testing
 
 ```bash

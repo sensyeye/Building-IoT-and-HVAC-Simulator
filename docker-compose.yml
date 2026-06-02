@@ -1,0 +1,28 @@
+services:
+  simulator:
+    build: .
+    image: building-iot-simulator:latest
+    container_name: building-iot-simulator
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+      # Add any runtime overrides here, e.g.:
+      # - SENSGREEN_MQTT_HOST=broker.example.com
+      # - SENSGREEN_MQTT_PORT=8883
+    env_file:
+      - .env
+    volumes:
+      # Persist project JSONs created by the FastAPI UI
+      - ./data:/app/data
+      # Persist generated CSV / JSONL artifacts
+      - ./outputs:/app/outputs
+      # Mount config files (read-only)
+      - ./configs:/app/configs:ro
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=3).status==200 else 1)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

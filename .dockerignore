@@ -1,0 +1,38 @@
+# Version control
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*.egg-info
+.eggs
+build
+dist
+.pytest_cache
+.mypy_cache
+.ruff_cache
+
+# Virtual envs
+.venv
+venv
+env
+
+# IDE / OS
+.vscode
+.idea
+.DS_Store
+
+# Local data + generated artifacts (must be mounted at runtime)
+data
+outputs
+output
+*.log
+*.jsonl
+
+# Tests aren't needed in the runtime image
+tests
+
+# Local env files
+.env
+*.env.local
