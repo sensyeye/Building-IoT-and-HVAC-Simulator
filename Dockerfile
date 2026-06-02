@@ -32,8 +32,16 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     SIMULATOR_CONFIG="" \
     SIMULATOR_DATA_DIR="/app/data"
 
-# Non-root user
-RUN groupadd --system app && useradd --system --gid app --home /app --shell /usr/sbin/nologin app
+# Non-root user with a predictable UID/GID so host-side chown is easy:
+#   sudo chown -R 1000:1000 data outputs
+ARG APP_UID=1000
+ARG APP_GID=1000
+RUN groupadd --gid ${APP_GID} app \
+    && useradd --uid ${APP_UID} --gid ${APP_GID} --home /app --shell /usr/sbin/nologin app
+
+# Tini (signal handling) + gosu (drop privileges in entrypoint)
+RUN apt-get update && apt-get install -y --no-install-recommends tini gosu \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -42,12 +50,19 @@ COPY --from=builder /opt/venv /opt/venv
 # Copy application code (respects .dockerignore)
 COPY . .
 
+# Entrypoint fixes ownership of bind-mounted volumes (data/, outputs/),
+# then drops privileges to `app` and execs the command.
+COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
 # Pre-create writable runtime directories
 RUN mkdir -p /app/data /app/outputs && chown -R app:app /app
 
-USER app
-
+# NOTE: must start as root so the entrypoint can chown bind mounts.
+# It will `exec gosu app` (well, `su-exec`-style) before running uvicorn.
 EXPOSE 8000
+
+ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/docker-entrypoint.sh"]
 
 # Healthcheck hits the FastAPI liveness probe
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
