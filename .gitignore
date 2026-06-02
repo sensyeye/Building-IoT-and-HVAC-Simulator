@@ -24,11 +24,12 @@ env/
 # OS
 .DS_Store
 
-# Output
+# Output (anchored to repo root so we don't accidentally exclude
+# `simulator/outputs/` which is a Python module).
 *.log
-output/
-outputs/
+/output/
+/outputs/
 *.jsonl
 
 # Local web data store (project JSONs created by the FastAPI UI)
-data/
+/data/
