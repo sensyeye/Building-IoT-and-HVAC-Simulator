@@ -1,0 +1,44 @@
+# Zone occupancy sensor rules.
+metrics:
+  occupancy:
+    physical_min: 0
+    monotonic_non_decreasing: false
+    capacity_overflow_with_scenario: overcrowding
+
+# Per-zone-type behavioural expectations (used by demo_quality / scenario).
+zone_profiles:
+  meeting_room:
+    pattern: sharp_peaks
+    expected_max_ratio: 1.10   # may briefly exceed capacity
+    typical_dwell_minutes: [30, 90]
+  open_office:
+    pattern: smooth_day
+    typical_active_hours: [8, 18]
+  private_office:
+    pattern: low_steady
+  lobby:
+    pattern: transient
+  corridor:
+    pattern: transient
+  cafeteria:
+    pattern: meal_peaks
+  classroom:
+    pattern: class_blocks
+  lecture_hall:
+    pattern: large_peaks
+  guest_room:
+    pattern: hotel_overnight
+  patient_room:
+    pattern: continuous
+  waiting_area:
+    pattern: daytime_peaks
+  retail_area:
+    pattern: opening_hours_with_weekend_peak
+  cinema_hall:
+    pattern: scheduled_blocks
+  outdoor_area:
+    pattern: weather_dependent
+
+# Building-level occupancy ≈ Σ floor occupancy ≈ Σ zone occupancy.
+hierarchy:
+  tolerance_ratio: 0.15

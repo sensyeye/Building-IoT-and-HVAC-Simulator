@@ -1,0 +1,2976 @@
+{% extends "layout.html" %}
+
+{% block title %}{{ project.name }} · {{ app_name }}{% endblock %}
+
+{% block header_title %}{{ project.name }}{% endblock %}
+
+{% block content %}
+
+<div class="mb-6">
+
+<a href="/" class="text-sm text-gray-500 hover:text-gray-700">← Back to Dashboard</a>
+
+<div class="flex items-center justify-between mt-2">
+
+<div>
+
+        <h2 class="text-2xl font-semibold text-gray-900">{{ project.name }}</h2>
+
+<p class="text-sm text-gray-500 mt-1">
+
+          {{ project.building_type|capitalize }} · {{ project.city or "—" }} · {{ project.timezone }}
+
+</p>
+
+      </div>
+
+<span class="inline-flex items-center rounded-full bg-gray-100 text-gray-600 text-xs font-mono px-2.5 py-1">
+
+        {{ project.id }}
+
+</span>
+
+</div>
+
+  </div>
+
+<div class="space-y-6">
+
+<div class="border-b border-gray-200">
+
+<nav class="-mb-px flex gap-6 flex-wrap">
+
+{% set tabs = [
+
+("overview",    "Overview"),
+
+("integration", "Integration"),
+
+("devices",     "Devices"),
+
+("bridge",      "Bridge Test"),
+
+("live",        "Live"),
+
+("scenarios",   "Scenarios"),
+
+("events",      "Events")
+
+] %}
+
+{% for key, label in tabs %}
+
+<button type="button"
+        data-tab="{{ key }}"
+        class="project-tab-btn whitespace-nowrap border-b-2 py-3 px-1 text-sm font-medium {% if loop.first %}border-green-600 text-green-700{% else %}border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300{% endif %}">
+  {{ label }}
+</button>
+
+{% endfor %}
+
+</nav>
+
+</div>
+
+    <section data-tab-pane="overview" class="space-y-4">
+
+      {% if derived_status and derived_status.coverage and derived_status.coverage.severity in ("low", "over") %}
+
+<div class="rounded-2xl border {% if derived_status.coverage.severity == 'low' %}border-amber-200 bg-amber-50 text-amber-900{% else %}border-orange-200 bg-orange-50 text-orange-900{% endif %} p-4 text-sm flex items-start gap-3">
+
+<span class="text-base leading-none mt-0.5">⚠</span>
+
+<div class="min-w-0">
+
+            <div class="font-semibold">Modeled-area coverage warning</div>
+
+            <div class="text-xs mt-1">
+
+<span class="font-mono">{{ "%.0f"|format(derived_status.coverage.modeled_area_m2) }} m²</span>
+
+<span class="font-mono">{{ "%.0f"|format(derived_status.coverage.building_area_m2) }} m²</span>
+
+· Coverage:
+
+{% if derived_status.coverage.ratio is not none %}
+
+<span class="font-mono">{{ "%.1f"|format(derived_status.coverage.ratio * 100) }}%</span>
+
+{% else %}
+
+<span class="font-mono">—</span>
+
+{% endif %}
+
+</div>
+
+{% if derived_status.coverage.recommendation %}
+
+<div class="text-xs mt-1">{{ derived_status.coverage.recommendation }}</div>
+
+{% endif %}
+
+</div>
+
+</div>
+
+{% endif %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+
+<div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+
+<h3 class="text-sm font-semibold text-gray-700">Building</h3>
+
+<dl class="mt-3 grid grid-cols-2 gap-3 text-sm">
+
+<div><dt class="text-xs text-gray-500">Type</dt><dd class="font-medium">{{ project.building_type }}</dd></div>
+
+<div><dt class="text-xs text-gray-500">Demo depth</dt><dd class="font-medium">{{ project.demo_depth }}</dd></div>
+
+<div><dt class="text-xs text-gray-500">Area</dt><dd class="font-medium">{{ "%.0f"|format(project.area_m2) }} m²</dd></div>
+
+<div><dt class="text-xs text-gray-500">Floors</dt><dd class="font-medium">{{ project.floors }}</dd></div>
+
+          </dl>
+
+        </div>
+
+<div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+
+<h3 class="text-sm font-semibold text-gray-700">Status</h3>
+
+<dl class="mt-3 space-y-3 text-sm">
+
+<div class="flex items-center justify-between"><dt class="text-xs text-gray-500">Devices</dt><dd class="font-medium">{{ derived_status.device_count if derived_status else project.device_count }}</dd></div>
+
+<div class="flex items-center justify-between"><dt class="text-xs text-gray-500">Rooms</dt><dd class="font-medium">{{ derived_status.zone_count if derived_status else 0 }}</dd></div>
+
+<div class="flex items-center justify-between">
+
+<dt class="text-xs text-gray-500">Modeled area</dt>
+
+<dd class="font-medium">
+
+{% if derived_status and derived_status.coverage.ratio is not none %}
+
+{{ "%.0f"|format(derived_status.coverage.modeled_area_m2) }} m²
+
+<span class="text-xs text-gray-500">({{ "%.0f"|format(derived_status.coverage.ratio * 100) }}%)</span>
+
+                {% else %}
+
+                  —
+
+{% endif %}
+
+</dd>
+
+</div>
+
+            <div class="flex items-center justify-between">
+
+              <dt class="text-xs text-gray-500">Last validation</dt>
+
+<dd class="font-medium text-xs">
+
+{% if derived_status and derived_status.last_validation %}
+
+{{ derived_status.last_validation.status }} · <span class="font-mono text-gray-500">{{ derived_status.last_validation.ts }}</span>
+
+{% else %}not run{% endif %}
+
+</dd>
+
+</div>
+
+<div class="flex items-center justify-between">
+
+<dt class="text-xs text-gray-500">Last run</dt>
+
+<dd class="font-medium text-xs">
+
+{% if derived_status and derived_status.last_run %}
+
+                  {{ derived_status.last_run.kind }} · {{ derived_status.last_run.status }}
+
+                  <div class="font-mono text-gray-500">{{ derived_status.last_run.ts }}</div>
+
+{% else %}not run{% endif %}
+
+</dd>
+
+</div>
+
+</dl>
+
+</div>
+
+<div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+
+          <h3 class="text-sm font-semibold text-gray-700">Metadata</h3>
+
+          <dl class="mt-3 space-y-3 text-sm">
+
+<div class="flex items-center justify-between"><dt class="text-xs text-gray-500">Created</dt><dd class="font-mono text-xs">{{ project.created_at }}</dd></div>
+
+<div class="flex items-center justify-between"><dt class="text-xs text-gray-500">Updated</dt><dd class="font-mono text-xs">{{ project.updated_at }}</dd></div>
+
+</dl>
+
+</div>
+
+</div>
+
+</section>
+
+    <section data-tab-pane="integration" class="hidden">
+
+<div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+
+<div class="flex items-center justify-between mb-4">
+
+<h3 class="text-sm font-semibold text-gray-700">Sensgreen MQTT integration</h3>
+
+{% if integration %}
+
+<span class="inline-flex items-center gap-1 rounded-full bg-green-50 text-green-700 text-xs font-medium px-2.5 py-1"><span class="h-1.5 w-1.5 rounded-full bg-green-500"></span> configured</span>
+
+{% else %}
+
+            <span class="inline-flex items-center gap-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-1">not configured</span>
+
+          {% endif %}
+
+</div>
+
+<form id="integration-form" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+
+          <div>
+
+            <label class="block text-xs font-medium text-gray-600 mb-1">Host</label>
+
+<input name="host" type="text" required value="{{ integration.host if integration else 'ankara.sensgreen.com' }}" class="w-full rounded-lg border-gray-300 text-sm" />
+
+    proj, evt = services          </div>
+
+<div>
+
+<label class="block text-xs font-medium text-gray-600 mb-1">Port</label>
+
+<input name="port" type="number" min="1" max="65535" value="{{ integration.port if integration else 1881 }}" class="w-full rounded-lg border-gray-300 text-sm" />
+
+</div>
+
+<div>
+
+<label class="block text-xs font-medium text-gray-600 mb-1">Username</label>
+
+<input name="username" type="text" value="{{ integration.username if integration else '' }}" class="w-full rounded-lg border-gray-300 text-sm" />
+
+</div>
+
+<div>
+
+<label class="block text-xs font-medium text-gray-600 mb-1">Password</label>
+
+<input name="password" type="password" autocomplete="new-password" placeholder="{% if integration and integration.password %}leave blank to keep existing{% endif %}" class="w-full rounded-lg border-gray-300 text-sm" />
+
+          </div>
+
+          <div class="md:col-span-2">
+
+<label class="block text-xs font-medium text-gray-600 mb-1">Topic</label>
+
+<input name="topic" type="text" required value="{{ integration.topic if integration else 'sensor/data/925255' }}" class="w-full rounded-lg border-gray-300 text-sm font-mono" />
+
+<p class="mt-1 text-xs text-gray-500">One topic per building. The deviceEui lives inside the payload.</p>
+
+</div>
+
+<div class="md:col-span-2">
+
+<label class="block text-xs font-medium text-gray-600 mb-1">Error topic (optional)</label>
+
+            <input name="error_topic" type="text" value="{{ integration.error_topic if integration and integration.error_topic else '' }}" class="w-full rounded-lg border-gray-300 text-sm font-mono" />
+
+          </div>
+
+<div class="md:col-span-2 flex items-center gap-2">
+
+<input name="tls" type="checkbox" id="tls-checkbox" {% if integration and integration.tls %}checked{% endif %} class="rounded border-gray-300" />
+
+<label for="tls-checkbox" class="text-xs text-gray-600">TLS</label>
+
+</div>
+
+          <div class="md:col-span-2 flex items-center justify-end gap-2">
+            <span id="integration-status" class="text-xs text-gray-500"></span>
+            <button type="submit" class="rounded-lg bg-green-600 text-white text-sm font-medium px-4 py-2 hover:bg-green-700">Save integration</button>
+          </div>
+        </form>
+
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <!-- P2: integration test buttons + payload preview              -->
+        <!-- ──────────────────────────────────────────────────────────── -->
+        <div class="mt-6 border-t border-gray-200 pt-5">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <h4 class="text-sm font-semibold text-gray-700">Integration diagnostics</h4>
+              <p class="text-xs text-gray-500 mt-0.5">Run these against the saved integration without starting a Live session. Passwords are never echoed to the browser or the event log.</p>
+            </div>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button type="button" id="diag-test-connection-btn" class="rounded-lg bg-gray-100 text-gray-800 text-sm font-medium px-3 py-2 hover:bg-gray-200">Test connection</button>
+            <button type="button" id="diag-test-credentials-btn" class="rounded-lg bg-gray-100 text-gray-800 text-sm font-medium px-3 py-2 hover:bg-gray-200">Test credentials</button>
+            <button type="button" id="diag-publish-test-btn" class="rounded-lg bg-gray-100 text-gray-800 text-sm font-medium px-3 py-2 hover:bg-gray-200">Publish one test</button>
+            <button type="button" id="diag-preview-payload-btn" class="rounded-lg bg-gray-100 text-gray-800 text-sm font-medium px-3 py-2 hover:bg-gray-200">Preview payload</button>
+          </div>
+          <div id="diag-result" class="mt-3"></div>
+        </div>
+
+        <!-- Sensgreen mapping panel -->
+        <div class="mt-6 border-t border-gray-200 pt-5">
+          <div class="flex items-start justify-between gap-3 mb-3">
+            <div>
+              <h4 class="text-sm font-semibold text-gray-700">Sensgreen mapping</h4>
+              <p class="text-xs text-gray-500 mt-0.5">Sensgreen identifies devices by their <span class="font-mono">deviceEui</span> only — name and zone are kept locally for your benefit. Hand this table to your Sensgreen contact for provisioning.</p>
+            </div>
+            <button type="button" id="diag-copy-mapping-btn" class="text-xs font-medium text-green-700 hover:text-green-800">Copy as CSV</button>
+          </div>
+          <div id="diag-mapping" class="overflow-x-auto">
+            <div class="text-xs text-gray-500 py-4">Loading mapping…</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section data-tab-pane="devices" class="hidden space-y-4">
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+        <div class="flex items-start justify-between gap-4 mb-4">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-700">Devices &amp; rooms</h3>
+            <p class="text-sm text-gray-600 mt-1">Build the simulator config from the dashboard. Bridge Test and Live use this config when their <em>YAML path</em> field is left blank.</p>
+          </div>
+          <div class="text-right text-xs">
+            <div id="cfg-meta-state" class="inline-flex items-center gap-1 rounded-full bg-gray-100 text-gray-600 font-medium px-2.5 py-1">
+              <span class="h-1.5 w-1.5 rounded-full bg-gray-400"></span>
+              <span>loading…</span>
+            </div>
+            <div class="text-gray-500 mt-1" id="cfg-meta-path">—</div>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <!-- Rooms panel -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Rooms</h4>
+              <div class="flex items-center gap-3">
+                <button type="button" id="layout-generate-btn" class="text-xs font-medium text-blue-700 hover:text-blue-800" title="Generate rooms from a building archetype">⚡ Generate from archetype</button>
+                <button type="button" id="zone-add-btn" class="text-xs font-medium text-green-700 hover:text-green-800">+ Add room</button>
+              </div>
+            </div>
+            <div id="zones-list" class="space-y-2 text-sm">
+              <div class="text-gray-500 py-6 text-center">Loading…</div>
+            </div>
+          </div>
+
+          <!-- HVAC Zones panel -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">HVAC Zones</h4>
+              <button type="button" id="hvac-add-btn" class="text-xs font-medium text-green-700 hover:text-green-800">+ Add HVAC zone</button>
+            </div>
+            <div id="hvac-list" class="space-y-2 text-sm">
+              <div class="text-gray-500 py-6 text-center">No HVAC zones yet. Add one to wire rooms to a system.</div>
+            </div>
+            <div id="hvac-warnings" class="hidden mt-2 text-xs text-amber-700"></div>
+          </div>
+
+          <!-- Devices panel -->
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Devices</h4>
+              <div class="flex items-center gap-3">
+                <button type="button" id="device-autoprov-btn" class="text-xs font-medium text-blue-700 hover:text-blue-800" title="Provision devices for every zone based on its monitoring profile">🔌 Auto-provision</button>
+                <button type="button" id="device-bulk-btn" class="text-xs font-medium text-gray-700 hover:text-gray-900">Bulk add…</button>
+                <button type="button" id="device-add-btn" class="text-xs font-medium text-green-700 hover:text-green-800">+ Add device</button>
+              </div>
+            </div>
+            <div id="devices-list" class="space-y-2 text-sm">
+              <div class="text-gray-500 py-6 text-center">Loading…</div>
+            </div>
+          </div>
+        </div>
+
+        <div id="cfg-errors" class="hidden mt-4 rounded-lg border border-red-200 bg-red-50 text-red-800 text-sm p-3"></div>
+      </div>
+
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+        <details id="yaml-editor-details">
+          <summary class="cursor-pointer text-sm font-semibold text-gray-700 select-none">Raw YAML editor</summary>
+          <p class="text-xs text-gray-500 mt-2">Edit the managed config file directly. Saves go through the same validation as the structured editor above — invalid YAML or a rejected config will fail with the exact error below and the file on disk stays untouched.</p>
+          <textarea id="yaml-editor" spellcheck="false" class="mt-3 w-full h-96 font-mono text-xs border border-gray-300 rounded-lg p-3 bg-gray-50" placeholder="Loading…"></textarea>
+          <div id="yaml-editor-error" class="hidden mt-2 rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs p-2 whitespace-pre-wrap"></div>
+          <div id="yaml-editor-ok" class="hidden mt-2 rounded-lg border border-green-200 bg-green-50 text-green-800 text-xs p-2">Saved. Structured panels above were refreshed.</div>
+          <div class="flex flex-wrap items-center gap-2 mt-3">
+            <button type="button" id="yaml-editor-reload" class="rounded-lg bg-gray-100 text-gray-700 text-xs font-medium px-3 py-2 hover:bg-gray-200">Reload from disk</button>
+            <span id="yaml-editor-dirty" class="hidden text-xs text-amber-700">● unsaved changes</span>
+            <button type="button" id="yaml-editor-save" class="ml-auto rounded-lg bg-green-600 text-white text-sm font-medium px-4 py-2 hover:bg-green-700 disabled:opacity-50">Save YAML</button>
+          </div>
+        </details>
+      </div>
+    </section>
+
+    <!-- Zone modal -->
+    <div id="zone-modal" class="hidden fixed inset-0 bg-gray-900/40 z-50 items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-5 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="zone-modal-title" class="text-sm font-semibold text-gray-800">New room</h3>
+          <button type="button" class="text-gray-400 hover:text-gray-600 text-lg leading-none" data-close-modal="zone-modal">&times;</button>
+        </div>
+        <form id="zone-form" class="space-y-3 text-sm">
+          <input type="hidden" name="_mode" value="create">
+          <input type="hidden" name="_orig_id" value="">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Room ID</label>
+            <input name="id" required pattern="[a-z0-9_-]+" class="w-full rounded-lg border-gray-300" placeholder="meeting-room-1">
+            <p class="text-xs text-gray-500 mt-1">Lowercase, digits, dashes or underscores.</p>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Name</label>
+            <input name="name" required class="w-full rounded-lg border-gray-300" placeholder="Meeting Room 1">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Area (m²)</label>
+              <input name="area_m2" type="number" min="0" step="0.1" class="w-full rounded-lg border-gray-300" value="100">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Capacity</label>
+              <input name="capacity" type="number" min="0" step="1" class="w-full rounded-lg border-gray-300" value="20">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Room type</label>
+              <select name="room_type" id="zone-room-type" class="w-full rounded-lg border-gray-300">
+                <option value="">— infer from name —</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Monitoring profile</label>
+              <select name="monitoring_profile" id="zone-monitoring-profile" class="w-full rounded-lg border-gray-300">
+                <option value="">— infer from room type —</option>
+              </select>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">HVAC zone</label>
+              <select name="hvac_zone_id" id="zone-hvac-zone" class="w-full rounded-lg border-gray-300">
+                <option value="">— none —</option>
+              </select>
+              <p class="text-xs text-gray-500 mt-1">Add HVAC zones in the HVAC panel first.</p>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Floor id</label>
+              <input name="floor_id" class="w-full rounded-lg border-gray-300" placeholder="f1">
+            </div>
+          </div>
+
+          <!-- Monitoring step (P9.6) -->
+          <div class="rounded-lg border border-blue-100 bg-blue-50/40 p-3 space-y-2">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-blue-900 uppercase tracking-wide">Monitoring</span>
+              <span class="text-[10px] text-blue-700">overrides the profile when set</span>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">Intent</label>
+                <select name="monitoring_intent" id="zone-monitoring-intent" class="w-full rounded-lg border-gray-300">
+                  <option value="">— use profile —</option>
+                </select>
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">Richness</label>
+                <select name="monitoring_richness" id="zone-monitoring-richness" class="w-full rounded-lg border-gray-300">
+                  <option value="">— use profile —</option>
+                </select>
+              </div>
+            </div>
+            <div id="zone-rec-preview" class="text-xs text-blue-900 min-h-[1.25rem]"></div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Exposure</label>
+              <select name="exposure" class="w-full rounded-lg border-gray-300">
+                <option value="">—</option>
+                <option value="interior">interior</option>
+                <option value="north">north</option>
+                <option value="south">south</option>
+                <option value="east">east</option>
+                <option value="west">west</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Ventilation</label>
+              <select name="ventilation_quality" class="w-full rounded-lg border-gray-300">
+                <option value="">—</option>
+                <option value="poor">poor</option>
+                <option value="average">average</option>
+                <option value="good">good</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Infiltration</label>
+              <select name="infiltration_level" class="w-full rounded-lg border-gray-300">
+                <option value="">—</option>
+                <option value="low">low</option>
+                <option value="medium">medium</option>
+                <option value="high">high</option>
+              </select>
+            </div>
+          </div>
+          <div id="zone-form-error" class="hidden rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs p-2"></div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" class="rounded-lg bg-gray-100 text-gray-700 text-sm font-medium px-4 py-2 hover:bg-gray-200" data-close-modal="zone-modal">Cancel</button>
+            <button type="submit" id="zone-form-submit" class="rounded-lg bg-green-600 text-white text-sm font-medium px-4 py-2 hover:bg-green-700">Add room</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Layout generator modal -->
+    <div id="layout-modal" class="hidden fixed inset-0 bg-gray-900/40 z-50 items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-5 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-gray-800">Generate zones from archetype</h3>
+          <button type="button" class="text-gray-400 hover:text-gray-600 text-lg leading-none" data-close-modal="layout-modal">&times;</button>
+        </div>
+        <form id="layout-form" class="space-y-3 text-sm">
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Building archetype</label>
+              <select id="layout-archetype" name="archetype_id" required class="w-full rounded-lg border-gray-300"></select>
+              <p id="layout-archetype-desc" class="text-xs text-gray-500 mt-1">—</p>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">Total area (m²)</label>
+                <input name="total_area_m2" type="number" min="10" step="10" required class="w-full rounded-lg border-gray-300" value="1500">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">Floors</label>
+                <input name="floors" type="number" min="1" max="50" step="1" required class="w-full rounded-lg border-gray-300" value="2">
+              </div>
+              <div>
+                <label class="block text-xs text-gray-500 mb-1">Seed (optional)</label>
+                <input name="seed" type="number" step="1" class="w-full rounded-lg border-gray-300" placeholder="random">
+              </div>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 pt-2">
+            <button type="button" id="layout-preview-btn" class="rounded-lg bg-gray-100 text-gray-700 text-sm font-medium px-4 py-2 hover:bg-gray-200">Preview</button>
+            <span id="layout-status" class="text-xs text-gray-500"></span>
+          </div>
+          <div id="layout-error" class="hidden rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs p-2 whitespace-pre-wrap"></div>
+          <div id="layout-preview" class="hidden border border-gray-200 rounded-lg p-3 bg-gray-50 text-xs space-y-2">
+            <div id="layout-summary" class="font-medium text-gray-800"></div>
+            <div id="layout-bymix" class="text-gray-600"></div>
+            <div class="max-h-48 overflow-y-auto border-t border-gray-200 pt-2">
+              <table class="w-full text-left">
+                <thead class="text-gray-500"><tr><th class="py-1 pr-2">Zone</th><th class="py-1 pr-2">Room type</th><th class="py-1 pr-2">Floor</th><th class="py-1 pr-2 text-right">m²</th><th class="py-1 text-right">Cap</th></tr></thead>
+                <tbody id="layout-rows"></tbody>
+              </table>
+            </div>
+          </div>
+          <div class="flex justify-end gap-2 pt-2 border-t border-gray-100">
+            <button type="button" class="rounded-lg bg-gray-100 text-gray-700 text-sm font-medium px-4 py-2 hover:bg-gray-200" data-close-modal="layout-modal">Cancel</button>
+            <button type="button" id="layout-apply-btn" disabled class="rounded-lg bg-blue-600 text-white text-sm font-medium px-4 py-2 hover:bg-blue-700 disabled:opacity-50">Apply (replaces all zones)</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Device modal -->
+    <div id="device-modal" class="hidden fixed inset-0 bg-gray-900/40 z-50 items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-lg w-full p-5 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+          <h3 id="device-modal-title" class="text-sm font-semibold text-gray-800">New device</h3>
+          <button type="button" class="text-gray-400 hover:text-gray-600 text-lg leading-none" data-close-modal="device-modal">&times;</button>
+        </div>
+        <form id="device-form" class="space-y-3 text-sm">
+          <input type="hidden" name="_mode" value="create">
+          <input type="hidden" name="_orig_eui" value="">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Sensor type</label>
+            <select name="type" id="device-type-select" required class="w-full rounded-lg border-gray-300"></select>
+            <p id="device-type-description" class="text-xs text-gray-500 mt-1"></p>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Display name</label>
+            <input name="name" required class="w-full rounded-lg border-gray-300" placeholder="Lobby IAQ">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Zone</label>
+            <select name="zone_id" required class="w-full rounded-lg border-gray-300"></select>
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">DevEUI (16 hex chars)</label>
+            <div class="flex gap-2">
+              <input name="device_eui" required pattern="[0-9a-fA-F:\-\s]+" class="flex-1 rounded-lg border-gray-300 font-mono" placeholder="fe00000000000001">
+              <button type="button" id="device-eui-generate" class="rounded-lg bg-gray-100 text-gray-700 text-xs font-medium px-3 py-2 hover:bg-gray-200 whitespace-nowrap">Generate</button>
+            </div>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide mt-2 mb-2">Sensor metadata</div>
+            <div id="device-metadata-fields" class="space-y-2"></div>
+          </div>
+          <div id="device-form-error" class="hidden rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs p-2"></div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" class="rounded-lg bg-gray-100 text-gray-700 text-sm font-medium px-4 py-2 hover:bg-gray-200" data-close-modal="device-modal">Cancel</button>
+            <button type="submit" id="device-form-submit" class="rounded-lg bg-green-600 text-white text-sm font-medium px-4 py-2 hover:bg-green-700">Add device</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    <!-- /Devices tab -->
+
+    <!-- Bulk modal -->
+    <div id="bulk-modal" class="hidden fixed inset-0 bg-gray-900/40 z-50 items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-5 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-gray-800">Bulk add devices</h3>
+          <button type="button" class="text-gray-400 hover:text-gray-600 text-lg leading-none" data-close-modal="bulk-modal">&times;</button>
+        </div>
+        <p class="text-sm text-gray-600 mb-3">Pick how many of each sensor type you want. The system assigns names like <span class="font-mono text-xs">Lobby IAQ 01</span> and spreads devices across zones using the chosen strategy.</p>
+
+        <form id="bulk-form" class="space-y-4 text-sm">
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Zone strategy</label>
+              <select name="zone_strategy" class="w-full rounded-lg border-gray-300">
+                <option value="round_robin" selected>Round-robin (spread evenly)</option>
+                <option value="by_capacity">By capacity (weight by zone capacity / area)</option>
+                <option value="fill">Fill first zone first</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Name prefix (optional)</label>
+              <input name="name_prefix" type="text" class="w-full rounded-lg border-gray-300" placeholder="e.g. B1">
+            </div>
+          </div>
+
+          <div>
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-xs font-semibold text-gray-700 uppercase tracking-wide">Sensors</h4>
+              <button type="button" id="bulk-row-add" class="text-xs font-medium text-green-700 hover:text-green-800">+ Add row</button>
+            </div>
+            <div id="bulk-rows" class="space-y-2"></div>
+          </div>
+
+          <div id="bulk-summary" class="text-xs text-gray-500"></div>
+          <div id="bulk-form-error" class="hidden rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs p-2"></div>
+
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" class="rounded-lg bg-gray-100 text-gray-700 text-sm font-medium px-4 py-2 hover:bg-gray-200" data-close-modal="bulk-modal">Cancel</button>
+            <button type="submit" id="bulk-form-submit" class="rounded-lg bg-green-600 text-white text-sm font-medium px-4 py-2 hover:bg-green-700">Create devices</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- HVAC zone modal -->
+    <div id="hvac-modal" class="hidden fixed inset-0 bg-gray-900/40 z-50 items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-md w-full p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-gray-800">New HVAC zone</h3>
+          <button type="button" class="text-gray-400 hover:text-gray-600 text-lg leading-none" data-close-modal="hvac-modal">&times;</button>
+        </div>
+        <form id="hvac-form" class="space-y-3 text-sm">
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">HVAC zone ID</label>
+            <input name="id" required pattern="[A-Za-z0-9_\-]+" class="w-full rounded-lg border-gray-300" placeholder="AHU-North">
+          </div>
+          <div>
+            <label class="block text-xs text-gray-500 mb-1">Name</label>
+            <input name="name" class="w-full rounded-lg border-gray-300" placeholder="AHU North">
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">System type</label>
+              <select name="system_type" class="w-full rounded-lg border-gray-300">
+                <option value="">—</option>
+                <option value="ahu">AHU</option>
+                <option value="fcu">FCU</option>
+                <option value="vrf">VRF</option>
+                <option value="split">Split</option>
+                <option value="chiller">Chiller</option>
+                <option value="none">None</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">System id</label>
+              <input name="system_id" class="w-full rounded-lg border-gray-300" placeholder="ahu-01">
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Setpoint (°C)</label>
+              <input name="setpoint_c" type="number" step="0.1" class="w-full rounded-lg border-gray-300" placeholder="22">
+            </div>
+            <div>
+              <label class="block text-xs text-gray-500 mb-1">Capacity (kW)</label>
+              <input name="capacity_kw" type="number" step="0.1" class="w-full rounded-lg border-gray-300" placeholder="30">
+            </div>
+          </div>
+          <div id="hvac-form-error" class="hidden rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs p-2"></div>
+          <div class="flex justify-end gap-2 pt-2">
+            <button type="button" class="rounded-lg bg-gray-100 text-gray-700 text-sm font-medium px-4 py-2 hover:bg-gray-200" data-close-modal="hvac-modal">Cancel</button>
+            <button type="submit" class="rounded-lg bg-green-600 text-white text-sm font-medium px-4 py-2 hover:bg-green-700">Add HVAC zone</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Auto-provision modal -->
+    <div id="autoprov-modal" class="hidden fixed inset-0 bg-gray-900/40 z-50 items-center justify-center p-4">
+      <div class="bg-white rounded-2xl shadow-xl max-w-3xl w-full p-5 max-h-[90vh] overflow-y-auto">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-gray-800">Auto-provision devices</h3>
+          <button type="button" class="text-gray-400 hover:text-gray-600 text-lg leading-none" data-close-modal="autoprov-modal">&times;</button>
+        </div>
+        <p class="text-xs text-gray-600 mb-4">
+          For every zone, we look up its monitoring profile (explicit or inferred from <code>room_type</code>) and stage one device per <code>required_sensor_type</code>. Names + EUIs are deterministic. Click <strong>Preview</strong> first, then <strong>Apply</strong>.
+        </p>
+        <div class="flex items-center gap-4 text-sm mb-3">
+          <label class="inline-flex items-center gap-2">
+            <input type="checkbox" id="autoprov-overwrite" class="rounded border-gray-300">
+            <span class="text-gray-700">Overwrite (add even if zone already has that sensor type)</span>
+          </label>
+        </div>
+        <div class="flex justify-start gap-2 mb-4">
+          <button type="button" id="autoprov-preview-btn" class="rounded-lg bg-blue-600 text-white text-sm font-medium px-4 py-2 hover:bg-blue-700">Preview</button>
+          <button type="button" id="autoprov-apply-btn" class="rounded-lg bg-green-600 text-white text-sm font-medium px-4 py-2 hover:bg-green-700 disabled:opacity-50" disabled>Apply</button>
+        </div>
+        <div id="autoprov-summary" class="hidden text-xs text-gray-600 mb-2"></div>
+        <div id="autoprov-error" class="hidden rounded-lg border border-red-200 bg-red-50 text-red-800 text-xs p-2 mb-3"></div>
+        <div id="autoprov-result" class="text-xs text-gray-700"></div>
+      </div>
+    </div>
+
+    <section data-tab-pane="bridge" class="hidden">
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+        <h3 class="text-sm font-semibold text-gray-700 mb-4">Bridge test</h3>
+        <p class="text-sm text-gray-600 mb-4">Publishes one synthetic payload per device to the configured broker and waits briefly for any error-topic rejections. Each run is recorded on the Events tab.</p>
+
+        <form id="bridge-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm items-end">
+          <div class="md:col-span-2">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Config path <span class="text-gray-400 font-normal">(optional)</span></label>
+            <input name="config_path" type="text" value="{{ default_config_path }}" class="w-full rounded-lg border-gray-300 text-sm font-mono" />
+            <p class="mt-1 text-xs text-gray-500">Leave blank to use the config built on the Devices tab.</p>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-gray-600 mb-1">Listen (s)</label>
+            <input name="error_listen_seconds" type="number" step="0.5" min="0" max="30" value="2" class="w-full rounded-lg border-gray-300 text-sm" />
+          </div>
+          <div class="md:col-span-3 flex items-center gap-3">
+            <label class="inline-flex items-center gap-2 text-xs text-gray-600"><input name="dry_run" type="checkbox" class="rounded border-gray-300" /> Dry-run (no network)</label>
+            <button type="submit" class="ml-auto rounded-lg bg-green-600 text-white text-sm font-medium px-4 py-2 hover:bg-green-700">Run bridge test</button>
+          </div>
+        </form>
+
+        <div id="bridge-result" class="mt-4"></div>
+      </div>
+    </section>
+
+    <section data-tab-pane="live" class="hidden space-y-4">
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-gray-700">Live simulation</h3>
+          <span id="live-state-badge" class="inline-flex items-center gap-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-1">
+            <span class="h-1.5 w-1.5 rounded-full bg-gray-400" id="live-state-dot"></span>
+            <span id="live-state-text">{{ live_status.state }}</span>
+          </span>
+        </div>
+        <p class="text-sm text-gray-600 mb-4">
+          Generate readings on a fixed cadence and publish them to your configured broker.
+          Each reading also appears in the table below in real time.
+        </p>
+
+        <form id="live-form" class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm items-end">
+          <div class="md:col-span-2">
+            <label class="block text-xs font-medium text-gray-600 mb-1">Config path <span class="text-gray-400 font-normal">(optional)</span></label>
+            <input name="config_path" type="text" value="{{ default_config_path }}" class="w-full rounded-lg border-gray-300 text-sm font-mono" />
+            <p class="mt-1 text-xs text-gray-500">Leave blank to use the config built on the Devices tab.</p>
+          </div>
+          <div class="flex items-center gap-3">
+            <label class="inline-flex items-center gap-2 text-xs text-gray-600">
+              <input name="dry_run" type="checkbox" class="rounded border-gray-300" /> Dry-run
+            </label>
+            <button type="submit" id="live-start-btn" class="rounded-lg bg-green-600 text-white text-sm font-medium px-4 py-2 hover:bg-green-700">Start</button>
+            <button type="button" id="live-stop-btn" class="rounded-lg bg-gray-200 text-gray-700 text-sm font-medium px-4 py-2 hover:bg-gray-300">Stop</button>
+          </div>
+        </form>
+
+        <div id="live-stats" class="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+          <div class="rounded-lg border border-gray-200 p-3"><div class="text-xs text-gray-500">Ticks</div><div class="font-mono text-base" id="live-ticks">0</div></div>
+          <div class="rounded-lg border border-gray-200 p-3"><div class="text-xs text-gray-500">Published</div><div class="font-mono text-base" id="live-published">0</div></div>
+          <div class="rounded-lg border border-gray-200 p-3"><div class="text-xs text-gray-500">Failed</div><div class="font-mono text-base" id="live-failed">0</div></div>
+          <div class="rounded-lg border border-gray-200 p-3"><div class="text-xs text-gray-500">Started</div><div class="font-mono text-xs" id="live-started">—</div></div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-gray-700">Active scenarios</h3>
+          <a href="#" data-tab="scenarios" class="text-xs text-green-700 hover:text-green-800 jump-to-scenarios">Edit on Scenarios tab →</a>
+        </div>
+        <div id="live-active-scenarios" class="flex flex-wrap gap-2">
+          <span class="text-xs text-gray-500">No scenarios enabled — readings reflect normal building behaviour.</span>
+        </div>
+        <p class="mt-3 text-xs text-gray-500">Click a reading below to see which scenarios explain it.</p>
+      </div>
+
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+        <div class="flex items-center justify-between mb-3">
+          <div>
+            <h3 class="text-sm font-semibold text-gray-700">Recent micro-events</h3>
+            <p class="text-xs text-gray-500 mt-0.5">Rare, short-window incidents the simulator injected: printer plumes, cleaning sprays, door-open, HVAC short-cycle, sneeze clusters, weather fronts, sensor glitches and more.</p>
+          </div>
+          <span id="live-micro-events-count" class="rounded-full bg-purple-100 text-purple-800 text-[11px] font-mono px-2 py-0.5">0</span>
+        </div>
+        <div id="live-micro-events" class="space-y-1.5 max-h-48 overflow-y-auto text-xs">
+          <div class="text-gray-500">No micro-events yet — start a live session and they will pop up here as they fire.</div>
+        </div>
+      </div>
+
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-sm font-semibold text-gray-700">Per-device last reading</h3>
+          <span class="text-xs text-gray-500" id="live-stream-info">disconnected</span>
+        </div>
+        <div id="live-devices-table" class="overflow-x-auto">
+          <div class="text-sm text-gray-500 py-6 text-center">Start a session to see live readings here.</div>
+        </div>
+      </div>
+
+      <!-- Reading detail drawer -->
+      <div id="live-reading-detail" class="hidden rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+        <div class="flex items-start justify-between gap-4">
+          <div class="min-w-0">
+            <h3 class="text-sm font-semibold text-gray-800" id="live-detail-title">Reading detail</h3>
+            <div class="text-xs text-gray-500 font-mono mt-1" id="live-detail-sub"></div>
+          </div>
+          <button type="button" id="live-detail-close" class="text-gray-400 hover:text-gray-600 text-lg leading-none">&times;</button>
+        </div>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
+          <div>
+            <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">Channels</div>
+            <table class="text-sm w-full">
+              <tbody id="live-detail-channels"></tbody>
+            </table>
+          </div>
+          <div>
+            <div class="text-xs font-semibold text-gray-700 uppercase tracking-wide mb-1">Why this reading looks like this</div>
+            <div id="live-detail-scenarios" class="space-y-2 text-sm"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section data-tab-pane="scenarios" class="hidden">
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm p-5">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="text-sm font-semibold text-gray-700">Scenarios</h3>
+          <div class="flex items-center gap-2">
+            <span id="scenarios-status" class="text-xs text-gray-500"></span>
+            <button type="button" id="scenarios-save-btn" class="rounded-lg bg-green-600 text-white text-sm font-medium px-4 py-2 hover:bg-green-700">Save</button>
+          </div>
+        </div>
+        <p class="text-sm text-gray-600 mb-4">Toggle intentional anomalies and optional time windows. Enabled scenarios are passed through to validation runs and live sessions so the validator labels matching findings as <em>intended</em>.</p>
+
+        <form id="scenarios-form" class="space-y-3">
+          {% for s in scenario_catalog %}
+            <div class="rounded-lg border border-gray-200 p-3 flex flex-col md:flex-row md:items-center gap-3">
+              <label class="inline-flex items-start gap-2 md:flex-1">
+                <input type="checkbox" data-scenario-id="{{ s.id }}" class="scenario-toggle mt-0.5 rounded border-gray-300" {% if s.enabled %}checked{% endif %} />
+                <div>
+                  <div class="text-sm font-medium text-gray-800">{{ s.name }}</div>
+                  <div class="text-xs text-gray-500">{{ s.description }}</div>
+                  <div class="mt-1 inline-flex items-center gap-1 rounded-md bg-gray-100 text-gray-600 text-[10px] px-1.5 py-0.5">{{ s.category }}</div>
+                </div>
+              </label>
+              <div class="flex items-center gap-2 text-xs text-gray-600">
+                <label class="flex flex-col">
+                  <span class="text-[11px]">From</span>
+                  <input type="datetime-local" data-scenario-start="{{ s.id }}" value="{{ s.start[:16] if s.start else '' }}" class="rounded border-gray-300 text-xs" />
+                </label>
+                <label class="flex flex-col">
+                  <span class="text-[11px]">To</span>
+                  <input type="datetime-local" data-scenario-end="{{ s.id }}" value="{{ s.end[:16] if s.end else '' }}" class="rounded border-gray-300 text-xs" />
+                </label>
+              </div>
+            </div>
+          {% endfor %}
+        </form>
+      </div>
+    </section>
+
+    <section data-tab-pane="events" class="hidden">
+      <div class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+        <div class="flex flex-wrap items-center justify-between gap-2 p-5 border-b border-gray-100">
+          <h3 class="text-sm font-semibold text-gray-700">Recent events</h3>
+          <div class="flex flex-wrap items-center gap-2">
+            <select id="events-filter-kind" class="rounded border-gray-300 text-xs">
+              <option value="">all kinds</option>
+              <option value="historical_run">historical_run</option>
+              <option value="live_run">live_run</option>
+              <option value="bridge_test">bridge_test</option>
+              <option value="scenario">scenario</option>
+              <option value="integration">integration</option>
+              <option value="config">config</option>
+              <option value="error">error</option>
+            </select>
+            <select id="events-filter-status" class="rounded border-gray-300 text-xs">
+              <option value="">any status</option>
+              <option value="succeeded">succeeded</option>
+              <option value="failed">failed</option>
+              <option value="running">running</option>
+              <option value="info">info</option>
+            </select>
+            <input id="events-filter-q" type="search" placeholder="search summary / details…" class="rounded border-gray-300 text-xs w-48" />
+            <button type="button" id="events-refresh" class="text-xs text-gray-600 hover:text-gray-900 underline">refresh</button>
+            <button type="button" id="events-clear-btn" class="text-xs text-red-600 hover:text-red-800 underline">clear all</button>
+          </div>
+        </div>
+        <div id="events-table-wrap" class="p-5">
+          {% include "_events_table.html" %}
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    (function () {
+      const projectId = {{ project.id | tojson }};
+
+      // ---- tabs ----
+      const buttons = document.querySelectorAll(".project-tab-btn");
+      const panes = document.querySelectorAll("[data-tab-pane]");
+      buttons.forEach(function (btn) {
+        btn.addEventListener("click", function () {
+          const key = btn.dataset.tab;
+          buttons.forEach(function (b) {
+            const active = b.dataset.tab === key;
+            b.classList.toggle("border-green-600", active);
+            b.classList.toggle("text-green-700", active);
+            b.classList.toggle("border-transparent", !active);
+            b.classList.toggle("text-gray-500", !active);
+          });
+          panes.forEach(function (p) {
+            p.classList.toggle("hidden", p.dataset.tabPane !== key);
+          });
+        });
+      });
+
+      // ---- integration form ----
+      const integForm = document.getElementById("integration-form");
+      const integStatus = document.getElementById("integration-status");
+      if (integForm) {
+        integForm.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const fd = new FormData(integForm);
+          const body = {
+            host: fd.get("host"),
+            port: parseInt(fd.get("port") || "1881", 10),
+            username: fd.get("username") || null,
+            topic: fd.get("topic"),
+            error_topic: fd.get("error_topic") || null,
+            tls: fd.get("tls") === "on"
+          };
+          const pw = fd.get("password");
+          if (pw) body.password = pw;
+          integStatus.textContent = "Saving…";
+          integStatus.className = "text-xs text-gray-500";
+          try {
+            const r = await fetch("/api/projects/" + projectId + "/integration", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body)
+            });
+            if (!r.ok) {
+              const err = await r.json().catch(function () { return {}; });
+              throw new Error(err.detail || ("HTTP " + r.status));
+            }
+            integStatus.textContent = "Saved.";
+            integStatus.className = "text-xs text-green-700";
+          } catch (err) {
+            integStatus.textContent = "Failed: " + err.message;
+            integStatus.className = "text-xs text-red-700";
+          }
+        });
+      }
+
+      // ---- P2 integration diagnostics (test buttons + payload preview) ----
+      const diagResult = document.getElementById("diag-result");
+      function renderDiagResult(title, payload) {
+        if (!diagResult) return;
+        const ok = payload && payload.ok;
+        const cls = ok
+          ? "border-green-200 bg-green-50 text-green-900"
+          : "border-red-200 bg-red-50 text-red-900";
+        const msg = (payload && payload.message) || (ok ? "ok" : "failed");
+        let extra = "";
+        if (payload && payload.latency_ms !== undefined && payload.latency_ms !== null) {
+          extra = ' <span class="text-xs text-gray-600">· ' + payload.latency_ms + ' ms</span>';
+        }
+        let body = "";
+        if (payload && payload.payload) {
+          body = '<details class="mt-2"><summary class="cursor-pointer text-xs font-medium">Payload sample</summary>'
+            + '<pre class="mt-1 text-[11px] font-mono bg-white border border-gray-200 rounded p-2 overflow-x-auto">'
+            + escapeHtml(JSON.stringify(payload.payload, null, 2)) + '</pre>'
+            + (payload.topic ? '<div class="text-[11px] text-gray-500 mt-1">topic: <span class="font-mono">' + escapeHtml(payload.topic) + '</span></div>' : '')
+            + '</details>';
+        }
+        diagResult.innerHTML = '<div class="rounded-lg border ' + cls + ' p-3 text-sm">'
+          + '<div class="font-medium">' + escapeHtml(title) + (ok ? ' ✓' : ' ✗') + extra + '</div>'
+          + '<div class="text-xs mt-0.5">' + escapeHtml(msg) + '</div>'
+          + body
+          + '</div>';
+      }
+      function renderDiagError(title, err) {
+        if (!diagResult) return;
+        diagResult.innerHTML = '<div class="rounded-lg border border-red-200 bg-red-50 text-red-900 p-3 text-sm">'
+          + '<div class="font-medium">' + escapeHtml(title) + ' ✗</div>'
+          + '<div class="text-xs mt-0.5">' + escapeHtml(err.message || String(err)) + '</div>'
+          + '</div>';
+      }
+      function diagBusy(title) {
+        if (diagResult) {
+          diagResult.innerHTML = '<div class="rounded-lg border border-gray-200 bg-white p-3 text-sm text-gray-600">' + escapeHtml(title) + '…</div>';
+        }
+      }
+      async function diagPost(path, body, title) {
+        diagBusy(title);
+        try {
+          const r = await fetch("/api/projects/" + projectId + path, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body || {}),
+          });
+          const data = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            renderDiagError(title, { message: data.detail || ("HTTP " + r.status) });
+
+          }
+          renderDiagResult(title, data);
+        } catch (err) {
+          renderDiagError(title, err);
+        }
+      }
+      const btnTestConn = document.getElementById("diag-test-connection-btn");
+      if (btnTestConn) btnTestConn.addEventListener("click", () => diagPost("/integration/test-connection", {}, "Test connection"));
+      const btnTestCreds = document.getElementById("diag-test-credentials-btn");
+      if (btnTestCreds) btnTestCreds.addEventListener("click", () => diagPost("/integration/test-credentials", {}, "Test credentials"));
+      const btnPubTest = document.getElementById("diag-publish-test-btn");
+      if (btnPubTest) btnPubTest.addEventListener("click", () => diagPost("/integration/publish-test", {}, "Publish one test payload"));
+      const btnPreview = document.getElementById("diag-preview-payload-btn");
+      if (btnPreview) btnPreview.addEventListener("click", () => diagPost("/preview-payload", {}, "Preview payload"));
+
+      // ---- P2 Sensgreen mapping panel ----
+      const mappingBox = document.getElementById("diag-mapping");
+      let mappingRows = [];
+      async function loadMapping() {
+        if (!mappingBox) return;
+        try {
+          const r = await fetch("/api/projects/" + projectId + "/mapping");
+          if (!r.ok) {
+            mappingBox.innerHTML = '<div class="text-xs text-red-700">Failed to load mapping (HTTP ' + r.status + ').</div>';
+            return;
+          }
+          const data = await r.json();
+          mappingRows = data.rows || [];
+          if (mappingRows.length === 0) {
+            mappingBox.innerHTML = '<div class="text-xs text-gray-500 py-3">No devices yet — add devices on the Devices tab.</div>';
+            return;
+          }
+          const rows = mappingRows.map(function (row) {
+            const keys = (row.sensgreen_metric_keys || []).map(function (k) {
+              return '<span class="inline-block rounded bg-gray-100 text-gray-700 text-[11px] font-mono px-1.5 py-0.5 mr-1 mb-1">' + escapeHtml(k) + '</span>';
+            }).join("");
+            const supported = row.supported
+              ? '<span class="inline-flex items-center rounded-full bg-green-50 text-green-800 border border-green-200 text-[11px] px-2 py-0.5">supported</span>'
+              : '<span class="inline-flex items-center rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[11px] px-2 py-0.5">unmapped</span>';
+            return '<tr class="align-top">'
+              + '<td class="py-1.5 pr-3 font-mono text-xs">' + escapeHtml(row.device_eui || "") + '</td>'
+              + '<td class="py-1.5 pr-3 text-xs">' + escapeHtml(row.name || "") + '</td>'
+              + '<td class="py-1.5 pr-3 text-xs text-gray-600">' + escapeHtml(row.sensor_type || "") + '</td>'
+              + '<td class="py-1.5 pr-3 text-xs text-gray-600">' + escapeHtml(row.zone_id || "—") + '</td>'
+              + '<td class="py-1.5 pr-3">' + supported + '</td>'
+              + '<td class="py-1.5">' + (keys || '<span class="text-[11px] text-gray-400">—</span>') + '</td>'
+              + '</tr>';
+          }).join("");
+          mappingBox.innerHTML = '<table class="w-full"><thead><tr class="text-[11px] uppercase tracking-wide text-gray-500 border-b border-gray-200">'
+            + '<th class="text-left py-1.5 pr-3 font-medium">EUI</th>'
+            + '<th class="text-left py-1.5 pr-3 font-medium">Name</th>'
+            + '<th class="text-left py-1.5 pr-3 font-medium">Type</th>'
+            + '<th class="text-left py-1.5 pr-3 font-medium">Zone</th>'
+            + '<th class="text-left py-1.5 pr-3 font-medium">Mapping</th>'
+            + '<th class="text-left py-1.5 font-medium">Sensgreen keys</th>'
+            + '</tr></thead><tbody>' + rows + '</tbody></table>';
+        } catch (err) {
+          mappingBox.innerHTML = '<div class="text-xs text-red-700">Failed to load mapping: ' + escapeHtml(err.message || String(err)) + '</div>';
+        }
+      }
+      const copyBtn = document.getElementById("diag-copy-mapping-btn");
+      if (copyBtn) {
+        copyBtn.addEventListener("click", async function () {
+          if (!mappingRows || mappingRows.length === 0) return;
+          const header = "device_eui,name,sensor_type,zone_id,sensgreen_metric_keys";
+          const lines = mappingRows.map(function (row) {
+            const keys = (row.sensgreen_metric_keys || []).join("|");
+            return [row.device_eui, row.name, row.sensor_type, row.zone_id || "", keys]
+              .map(function (v) { return '"' + String(v || "").replace(/"/g, '""') + '"'; })
+              .join(",");
+          });
+          const csv = [header].concat(lines).join("\n");
+          try {
+            await navigator.clipboard.writeText(csv);
+            copyBtn.textContent = "Copied ✓";
+            setTimeout(function () { copyBtn.textContent = "Copy as CSV"; }, 1500);
+          } catch (_) {
+            copyBtn.textContent = "Copy failed";
+          }
+        });
+      }
+      loadMapping();
+
+      // ---- bridge test ----
+      const bridgeForm = document.getElementById("bridge-form");
+      const bridgeOut = document.getElementById("bridge-result");
+      if (bridgeForm) {
+        bridgeForm.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const fd = new FormData(bridgeForm);
+          const body = {
+            config_path: (fd.get("config_path") || "").trim() || null,
+            dry_run: fd.get("dry_run") === "on",
+            error_listen_seconds: parseFloat(fd.get("error_listen_seconds") || "2")
+          };
+          bridgeOut.innerHTML = '<div class="text-sm text-gray-500">Running…</div>';
+          try {
+            const r = await fetch("/api/projects/" + projectId + "/bridge-test", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body)
+            });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.detail || ("HTTP " + r.status));
+            bridgeOut.innerHTML = renderBridgeResult(data);
+            const btn = document.getElementById("events-refresh");
+            if (btn) btn.click();
+          } catch (err) {
+            bridgeOut.innerHTML = '<div class="rounded-lg border border-red-200 bg-red-50 text-red-800 text-sm p-3">' + escapeHtml(err.message) + '</div>';
+          }
+        });
+      }
+
+      function renderBridgeResult(r) {
+        const total = r.devices.length;
+        const badge = r.all_ok
+          ? '<span class="inline-flex items-center rounded-full bg-green-50 text-green-700 text-xs font-medium px-2.5 py-1">all ok</span>'
+          : '<span class="inline-flex items-center rounded-full bg-red-50 text-red-700 text-xs font-medium px-2.5 py-1">issues</span>';
+        const rows = r.devices.map(function (d) {
+          const tag = d.published
+            ? '<span class="text-green-700 text-xs font-mono">OK</span>'
+            : '<span class="text-red-700 text-xs font-mono">FAIL</span>';
+          const err = d.error ? '<div class="text-xs text-red-700 mt-0.5">' + escapeHtml(d.error) + '</div>' : "";
+          return '<tr class="align-top">'
+            + '<td class="py-1.5 pr-3">' + tag + '</td>'
+            + '<td class="py-1.5 pr-3 font-mono text-xs">' + escapeHtml(d.device_eui) + '</td>'
+            + '<td class="py-1.5 pr-3 text-xs text-gray-600">' + escapeHtml(d.sensor_type) + '</td>'
+            + '<td class="py-1.5 pr-3">' + escapeHtml(d.device_name) + err + '</td>'
+            + '</tr>';
+        }).join("");
+        const errBlock = (r.broker_errors && r.broker_errors.length)
+          ? '<div class="mt-3 rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-800"><div class="font-medium mb-1">Broker error-topic messages</div><pre class="whitespace-pre-wrap">' + escapeHtml(JSON.stringify(r.broker_errors, null, 2)) + '</pre></div>'
+          : "";
+        return '<div class="rounded-lg border border-gray-200 bg-gray-50 p-4">'
+          + '<div class="flex items-center justify-between mb-3">'
+          + '<div class="text-sm"><span class="font-medium">' + escapeHtml(r.host) + ':' + r.port + '</span><span class="text-gray-500"> · ' + escapeHtml(r.topic) + '</span></div>'
+          + badge + '</div>'
+          + '<div class="text-xs text-gray-600 mb-2">published ' + r.published_count + '/' + total + ' · broker errors ' + r.broker_errors.length + (r.dry_run ? ' · dry-run' : '') + '</div>'
+          + '<table class="min-w-full text-sm"><thead class="text-xs text-gray-500 uppercase tracking-wide"><tr class="text-left">'
+          + '<th class="py-1.5 pr-3 font-medium w-12">Status</th>'
+          + '<th class="py-1.5 pr-3 font-medium">EUI</th>'
+          + '<th class="py-1.5 pr-3 font-medium">Type</th>'
+          + '<th class="py-1.5 pr-3 font-medium">Name</th>'
+          + '</tr></thead><tbody class="divide-y divide-gray-100">' + rows + '</tbody></table>'
+          + errBlock + '</div>';
+      }
+
+      // ---- live tab ----
+      const liveForm = document.getElementById("live-form");
+      const liveStartBtn = document.getElementById("live-start-btn");
+      const liveStopBtn = document.getElementById("live-stop-btn");
+      const liveStateText = document.getElementById("live-state-text");
+      const liveStateDot = document.getElementById("live-state-dot");
+      const liveTicks = document.getElementById("live-ticks");
+      const livePublished = document.getElementById("live-published");
+      const liveFailed = document.getElementById("live-failed");
+      const liveStarted = document.getElementById("live-started");
+      const liveDevicesTable = document.getElementById("live-devices-table");
+      const liveStreamInfo = document.getElementById("live-stream-info");
+      const lastByDevice = new Map();
+      let evtSource = null;
+      // The most recent session state seen by applyStatus. Other parts
+      // of the page (per-device table renderer, button click handlers)
+      // read from this so a stale page-load snapshot never wins over
+      // the live SSE update.
+      let liveSessionState = "stopped";
+
+      // Visual style toggles for Start/Stop. We do this in JS rather
+      // than swapping classes via CSS so the buttons always reflect
+      // ``liveSessionState`` even after a soft reload of the SSE.
+      const START_PRIMARY = ["bg-green-600", "text-white", "hover:bg-green-700"];
+      const START_DISABLED = ["bg-gray-100", "text-gray-400", "cursor-not-allowed"];
+      const STOP_PRIMARY = ["bg-red-600", "text-white", "hover:bg-red-700"];
+      const STOP_DISABLED = ["bg-gray-100", "text-gray-400", "cursor-not-allowed"];
+
+      function setBtnPalette(btn, on, off) {
+        if (!btn) return;
+        off.forEach(function (c) { btn.classList.remove(c); });
+        on.forEach(function (c) { btn.classList.add(c); });
+      }
+
+      function applyButtonsForState(state) {
+        const running = state === "running" || state === "starting";
+        if (liveStartBtn) {
+          liveStartBtn.disabled = running;
+          if (running) {
+            setBtnPalette(liveStartBtn, START_DISABLED, START_PRIMARY);
+          } else {
+            setBtnPalette(liveStartBtn, START_PRIMARY, START_DISABLED);
+          }
+        }
+        if (liveStopBtn) {
+          liveStopBtn.disabled = !running;
+          if (running) {
+            setBtnPalette(liveStopBtn, STOP_PRIMARY, STOP_DISABLED);
+          } else {
+            setBtnPalette(liveStopBtn, STOP_DISABLED, STOP_PRIMARY);
+          }
+        }
+      }
+
+      function setLiveState(state) {
+        liveStateText.textContent = state || "stopped";
+        const color = state === "running" ? "bg-green-500"
+          : state === "failed" ? "bg-red-500"
+          : state === "stopping" || state === "starting" ? "bg-yellow-500"
+          : "bg-gray-400";
+        liveStateDot.className = "h-1.5 w-1.5 rounded-full " + color;
+      }
+
+      function applyStatus(s) {
+        if (!s) return;
+        const state = s.state || "stopped";
+        liveSessionState = state;
+        setLiveState(state);
+        applyButtonsForState(state);
+        if (typeof s.ticks === "number") liveTicks.textContent = s.ticks;
+        if (typeof s.published === "number") livePublished.textContent = s.published;
+        if (typeof s.failed === "number") liveFailed.textContent = s.failed;
+        if (s.started_at) liveStarted.textContent = s.started_at;
+        // Refresh placeholder copy so users running a session never
+        // see "Start a session…" sticking around.
+        renderLiveDevices();
+      }
+
+      applyStatus({{ live_status | tojson }});
+
+      function openStream() {
+        if (evtSource) { evtSource.close(); evtSource = null; }
+        evtSource = new EventSource("/api/projects/" + projectId + "/live/stream");
+        liveStreamInfo.textContent = "connecting…";
+        evtSource.addEventListener("status", function (e) {
+          try { applyStatus(JSON.parse(e.data)); } catch (_) {}
+        });
+        evtSource.addEventListener("snapshot", function (e) {
+          try {
+            const items = JSON.parse(e.data) || [];
+            items.forEach(function (it) { lastByDevice.set(it.device_eui, it); });
+            renderLiveDevices();
+          } catch (_) {}
+        });
+        evtSource.addEventListener("reading", function (e) {
+          try {
+            const it = JSON.parse(e.data);
+            lastByDevice.set(it.device_eui, it);
+            ingestMicroEvents(it);
+            renderLiveDevices();
+          } catch (_) {}
+        });
+        evtSource.onopen = function () { liveStreamInfo.textContent = "streaming"; };
+        evtSource.onerror = function () { liveStreamInfo.textContent = "reconnecting…"; };
+      }
+
+      function renderLiveDevices() {
+        // Three states for the empty placeholder, all driven by the
+        // last status applied via applyStatus():
+        //   • not running, no readings → "Start a session…"
+        //   • running, no readings yet → "Waiting for first readings…"
+        //   • any readings → render the table.
+        if (lastByDevice.size === 0) {
+          const running = liveSessionState === "running" || liveSessionState === "starting";
+          if (running) {
+            liveDevicesTable.innerHTML = '<div class="text-sm text-gray-500 py-6 text-center">Live session is running. Waiting for first readings…</div>';
+          } else {
+            liveDevicesTable.innerHTML = '<div class="text-sm text-gray-500 py-6 text-center">Start a session to see live readings here.</div>';
+          }
+
+        }
+        const rows = Array.from(lastByDevice.values())
+          .sort(function (a, b) { return a.device_name.localeCompare(b.device_name); })
+          .map(function (it) {
+            const tag = it.published
+              ? '<span class="text-green-700 text-xs font-mono">OK</span>'
+              : '<span class="text-red-700 text-xs font-mono">FAIL</span>';
+            const dataCells = Object.entries(it.data || {})
+              .slice(0, 5)
+              .map(function (kv) {
+                return '<span class="inline-flex items-center gap-1 rounded bg-gray-100 text-gray-700 text-[11px] px-1.5 py-0.5"><span class="font-mono">' + escapeHtml(kv[0]) + '</span>=<span class="font-mono">' + escapeHtml(String(kv[1])) + '</span></span>';
+              }).join(" ");
+            const scenarios = it.scenarios || [];
+            const scenarioBadges = scenarios.length
+              ? scenarios.map(function (s) {
+                  return '<span class="inline-flex items-center rounded-full bg-amber-50 text-amber-800 border border-amber-200 text-[11px] px-2 py-0.5">' + escapeHtml(s.name) + '</span>';
+                }).join(" ")
+              : '';
+            const microEvents = it.micro_events || [];
+            const microBadges = microEvents.length
+              ? microEvents.map(function (m) {
+                  return '<span class="inline-flex items-center rounded-full bg-purple-50 text-purple-800 border border-purple-200 text-[11px] px-2 py-0.5" title="' + escapeHtml(m.description || '') + '">⚡ ' + escapeHtml(m.name) + '</span>';
+                }).join(" ")
+              : '';
+            const annotationCell = (scenarioBadges + ' ' + microBadges).trim()
+              || '<span class="text-[11px] text-gray-400">—</span>';
+            return '<tr class="align-top hover:bg-gray-50 cursor-pointer live-reading-row" data-eui="' + escapeHtml(it.device_eui) + '">'
+              + '<td class="py-1.5 pr-3">' + tag + '</td>'
+              + '<td class="py-1.5 pr-3 font-mono text-xs text-gray-500">' + escapeHtml(it.ts) + '</td>'
+              + '<td class="py-1.5 pr-3 font-mono text-xs">' + escapeHtml(it.device_eui) + '</td>'
+              + '<td class="py-1.5 pr-3 text-xs">' + escapeHtml(it.device_name) + '<div class="text-[11px] text-gray-500">' + escapeHtml(it.sensor_type) + '</div></td>'
+              + '<td class="py-1.5 pr-3">' + dataCells + '</td>'
+              + '<td class="py-1.5 pr-3 max-w-[280px]">' + annotationCell + '</td>'
+              + '</tr>';
+          }).join("");
+        liveDevicesTable.innerHTML = '<table class="min-w-full text-sm">'
+          + '<thead class="text-xs text-gray-500 uppercase tracking-wide"><tr class="text-left">'
+          + '<th class="py-1.5 pr-3 font-medium w-12">Pub</th>'
+          + '<th class="py-1.5 pr-3 font-medium">Last seen</th>'
+          + '<th class="py-1.5 pr-3 font-medium">EUI</th>'
+          + '<th class="py-1.5 pr-3 font-medium">Device</th>'
+          + '<th class="py-1.5 pr-3 font-medium">Data</th>'
+          + '<th class="py-1.5 pr-3 font-medium">Scenarios</th>'
+          + '</tr></thead><tbody class="divide-y divide-gray-100">' + rows + '</tbody></table>';
+        liveDevicesTable.querySelectorAll(".live-reading-row").forEach(function (row) {
+          row.addEventListener("click", function () { showReadingDetail(row.dataset.eui); });
+        });
+      }
+
+      // ---- active-scenarios badge row + reading detail drawer ----
+      const activeScenariosEl = document.getElementById("live-active-scenarios");
+      const detailEl = document.getElementById("live-reading-detail");
+      const detailTitle = document.getElementById("live-detail-title");
+      const detailSub = document.getElementById("live-detail-sub");
+      const detailChannels = document.getElementById("live-detail-channels");
+      const detailScenarios = document.getElementById("live-detail-scenarios");
+      const detailClose = document.getElementById("live-detail-close");
+
+      function renderActiveScenarios(items) {
+        if (!items || !items.length) {
+          activeScenariosEl.innerHTML = '<span class="text-xs text-gray-500">No scenarios enabled — readings reflect normal building behaviour.</span>';
+          return;
+        }
+        activeScenariosEl.innerHTML = items.map(function (s) {
+          return (
+            '<span class="inline-flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 text-amber-900 text-xs px-3 py-2 max-w-md">' +
+              '<span class="mt-0.5">⚠</span>' +
+              '<span><span class="font-semibold">' + escapeHtml(s.name) + '</span>' +
+                '<span class="ml-2 text-amber-700 text-[10px] uppercase tracking-wide">' + escapeHtml(s.category) + '</span>' +
+                '<div class="text-amber-800 mt-0.5">' + escapeHtml(s.why || s.description || '') + '</div>' +
+              '</span>' +
+            '</span>'
+          );
+        }).join("");
+      }
+
+      async function loadActiveScenarios() {
+        try {
+          const r = await fetch("/api/projects/" + encodeURIComponent(projectId) + "/live/active-scenarios");
+          if (!r.ok) return;
+          const body = await r.json();
+          renderActiveScenarios(body.scenarios || []);
+        } catch (_) {}
+      }
+      loadActiveScenarios();
+      setInterval(loadActiveScenarios, 30000);
+
+      // ---- recent micro-events feed ----
+      const microEventsEl = document.getElementById("live-micro-events");
+      const microEventsCountEl = document.getElementById("live-micro-events-count");
+      // We dedupe by (event_id, zone_id, started_at) so the same active
+      // event seen across multiple readings only appears once.
+      const microSeen = new Set();
+      const microFeed = [];  // newest first
+      const MICRO_FEED_MAX = 20;
+
+      function ingestMicroEvents(it) {
+        const evs = it.micro_events || [];
+        if (!evs.length) return;
+        for (const m of evs) {
+          const key = (m.id || "") + "|" + (it.zone_id || "") + "|" + (m.started_at || "");
+          if (microSeen.has(key)) continue;
+          microSeen.add(key);
+          microFeed.unshift({
+            id: m.id,
+            name: m.name,
+            category: m.category,
+            description: m.description,
+            zone_id: it.zone_id,
+            started_at: m.started_at,
+            first_seen_ts: it.ts,
+          });
+          if (microFeed.length > MICRO_FEED_MAX) microFeed.length = MICRO_FEED_MAX;
+        }
+        renderMicroEventsFeed();
+      }
+
+      function renderMicroEventsFeed() {
+        microEventsCountEl.textContent = String(microFeed.length);
+        if (!microFeed.length) {
+          microEventsEl.innerHTML = '<div class="text-gray-500">No micro-events yet — start a live session and they will pop up here as they fire.</div>';
+          return;
+        }
+        microEventsEl.innerHTML = microFeed.map(function (m) {
+          return (
+            '<div class="flex items-start gap-2 rounded-md border border-purple-100 bg-purple-50/60 px-2 py-1.5">' +
+              '<span class="text-purple-700 font-bold mt-0.5">⚡</span>' +
+              '<div class="min-w-0 flex-1">' +
+                '<div class="flex items-baseline gap-2 flex-wrap">' +
+                  '<span class="font-semibold text-purple-900">' + escapeHtml(m.name) + '</span>' +
+                  '<span class="text-[10px] uppercase tracking-wide text-purple-600">' + escapeHtml(m.category || '') + '</span>' +
+                  (m.zone_id ? '<span class="text-[10px] text-gray-500 font-mono">zone ' + escapeHtml(m.zone_id) + '</span>' : '') +
+                  '<span class="ml-auto text-[10px] text-gray-500 font-mono">' + escapeHtml(m.first_seen_ts || m.started_at) + '</span>' +
+                '</div>' +
+                '<div class="text-purple-900/80 text-[11px] mt-0.5">' + escapeHtml(m.description || '') + '</div>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join("");
+      }
+
+      function showReadingDetail(eui) {
+        const it = lastByDevice.get(eui);
+        if (!it) return;
+        detailEl.classList.remove("hidden");
+        detailTitle.textContent = it.device_name + " · " + it.sensor_type;
+        detailSub.textContent = it.device_eui + " · " + it.ts + (it.zone_id ? " · zone " + it.zone_id : "");
+
+        // Channels table
+        const highlight = new Set();
+        (it.scenarios || []).forEach(function (s) {
+          // For now we don't ship per-scenario channel lists into the
+          // reading payload to keep it compact; the active-scenarios
+          // endpoint is the source of truth for that. We highlight by
+          // sensor_type's expected channels via a quick lookup below.
+        });
+        const dataEntries = Object.entries(it.data || {});
+        if (!dataEntries.length) {
+          detailChannels.innerHTML = '<tr><td class="py-1 text-xs text-gray-500">no channels</td></tr>';
+        } else {
+          detailChannels.innerHTML = dataEntries.map(function (kv) {
+            return '<tr><td class="py-1 pr-3 text-xs text-gray-500 font-mono align-top">' + escapeHtml(kv[0]) + '</td>'
+              + '<td class="py-1 font-mono">' + escapeHtml(String(kv[1])) + '</td></tr>';
+          }).join("");
+        }
+
+        // Scenario explanations
+        const scenarios = it.scenarios || [];
+        const microEvents = it.micro_events || [];
+        if (!scenarios.length && !microEvents.length) {
+          detailScenarios.innerHTML = '<div class="text-xs text-gray-500">No scenarios or micro-events apply to this reading — values reflect normal building behaviour for this sensor type.</div>';
+        } else {
+          const scParts = scenarios.map(function (s) {
+            return (
+              '<div class="rounded-lg border border-amber-200 bg-amber-50 p-3">' +
+                '<div class="flex items-center justify-between gap-2">' +
+                  '<div class="text-sm font-semibold text-amber-900">' + escapeHtml(s.name) + '</div>' +
+                  '<span class="text-[10px] uppercase tracking-wide text-amber-700">scenario · ' + escapeHtml(s.category) + '</span>' +
+                '</div>' +
+                '<div class="text-xs text-amber-900 mt-1">' + escapeHtml(s.why) + '</div>' +
+              '</div>'
+            );
+          });
+          const meParts = microEvents.map(function (m) {
+            return (
+              '<div class="rounded-lg border border-purple-200 bg-purple-50 p-3">' +
+                '<div class="flex items-center justify-between gap-2">' +
+                  '<div class="text-sm font-semibold text-purple-900">⚡ ' + escapeHtml(m.name) + '</div>' +
+                  '<span class="text-[10px] uppercase tracking-wide text-purple-700">micro-event · ' + escapeHtml(m.category) + '</span>' +
+                '</div>' +
+                '<div class="text-xs text-purple-900 mt-1">' + escapeHtml(m.description || '') + '</div>' +
+                '<div class="text-[10px] text-purple-700 mt-1 font-mono">started ' + escapeHtml(m.started_at || '') + '</div>' +
+              '</div>'
+            );
+          });
+          detailScenarios.innerHTML = scParts.concat(meParts).join("");
+        }
+        detailEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      if (detailClose) {
+        detailClose.addEventListener("click", function () { detailEl.classList.add("hidden"); });
+      }
+      document.querySelectorAll(".jump-to-scenarios").forEach(function (a) {
+        a.addEventListener("click", function (e) {
+          e.preventDefault();
+          const btn = document.querySelector('.project-tab-btn[data-tab="scenarios"]');
+          if (btn) btn.click();
+        });
+      });
+
+      // Refresh the active-scenarios bar whenever a live session
+      // (re)starts, since the user may have toggled scenarios between
+      // runs.
+      const origApplyStatus2 = applyStatus;
+      applyStatus = function (s) {
+        origApplyStatus2(s);
+        if (s && (s.state === "running" || s.state === "starting")) {
+          loadActiveScenarios();
+        }
+      };
+
+      function refreshStatus() {
+        fetch("/api/projects/" + projectId + "/live/status").then(function (r) { return r.json(); }).then(applyStatus).catch(function () {});
+      }
+      setInterval(refreshStatus, 5000);
+
+      if (liveForm) {
+        liveForm.addEventListener("submit", async function (e) {
+          e.preventDefault();
+          const fd = new FormData(liveForm);
+          const body = {
+            config_path: (fd.get("config_path") || "").trim() || null,
+            dry_run: fd.get("dry_run") === "on"
+          };
+          try {
+            const r = await fetch("/api/projects/" + projectId + "/live/start", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(body)
+            });
+            const data = await r.json();
+            if (!r.ok) throw new Error(data.detail || ("HTTP " + r.status));
+            applyStatus(data);
+            openStream();
+            const btn = document.getElementById("events-refresh");
+            if (btn) btn.click();
+          } catch (err) {
+            alert("Live start failed: " + err.message);
+          }
+        });
+      }
+      if (liveStopBtn) {
+        liveStopBtn.addEventListener("click", async function () {
+          try {
+            const r = await fetch("/api/projects/" + projectId + "/live/stop", { method: "POST" });
+            const data = await r.json();
+            applyStatus(data);
+            if (evtSource) { evtSource.close(); evtSource = null; liveStreamInfo.textContent = "disconnected"; }
+            const btn = document.getElementById("events-refresh");
+            if (btn) btn.click();
+          } catch (err) {
+            alert("Live stop failed: " + err.message);
+          }
+        });
+      }
+
+      // Auto-open the stream if a session is already running.
+      if (({{ live_status | tojson }} || {}).state === "running") {
+        openStream();
+      }
+
+      // ---- scenarios tab ----
+      const scenariosSaveBtn = document.getElementById("scenarios-save-btn");
+      const scenariosStatus = document.getElementById("scenarios-status");
+      const scenarioToggles = document.querySelectorAll(".scenario-toggle");
+
+      function updateScenariosCount() {
+        if (!scenariosStatus) return;
+        let on = 0;
+        scenarioToggles.forEach(function (cb) { if (cb.checked) on += 1; });
+        // Only refresh the count when we're not mid-save/in an error state.
+        const cur = scenariosStatus.textContent || "";
+        if (cur === "" || cur.startsWith("●") || cur.startsWith(on + " ")) {
+          if (on === 0) {
+            scenariosStatus.textContent = "none enabled";
+            scenariosStatus.className = "text-xs text-gray-500";
+          } else {
+            scenariosStatus.textContent = on + " enabled";
+            scenariosStatus.className = "text-xs text-gray-600";
+          }
+        }
+      }
+
+      let scenariosDirty = false;
+      function markScenariosDirty() {
+        scenariosDirty = true;
+        if (scenariosStatus) {
+          let on = 0;
+          scenarioToggles.forEach(function (cb) { if (cb.checked) on += 1; });
+          scenariosStatus.textContent = "● unsaved (" + on + " enabled)";
+          scenariosStatus.className = "text-xs text-amber-700";
+        }
+      }
+      scenarioToggles.forEach(function (cb) {
+        cb.addEventListener("change", markScenariosDirty);
+      });
+      document.querySelectorAll("[data-scenario-start],[data-scenario-end]").forEach(function (el) {
+        el.addEventListener("input", markScenariosDirty);
+        el.addEventListener("change", markScenariosDirty);
+      });
+      updateScenariosCount();
+
+      if (scenariosSaveBtn) {
+        scenariosSaveBtn.addEventListener("click", async function () {
+          const scenarios = [];
+          scenarioToggles.forEach(function (cb) {
+            const id = cb.dataset.scenarioId;
+            const start = document.querySelector('[data-scenario-start="' + id + '"]').value || null;
+            const end = document.querySelector('[data-scenario-end="' + id + '"]').value || null;
+            scenarios.push({ id: id, enabled: cb.checked, start: start, end: end });
+          });
+          scenariosStatus.textContent = "Saving…";
+          scenariosStatus.className = "text-xs text-gray-500";
+          scenariosSaveBtn.disabled = true;
+          scenariosSaveBtn.classList.add("opacity-50", "cursor-not-allowed");
+          try {
+            const r = await fetch("/api/projects/" + projectId + "/scenarios", {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ scenarios: scenarios })
+            });
+            if (!r.ok) {
+              const err = await r.json().catch(function () { return {}; });
+              throw new Error(err.detail || ("HTTP " + r.status));
+            }
+            scenariosDirty = false;
+            scenariosStatus.textContent = "Saved ✓";
+            scenariosStatus.className = "text-xs text-green-700";
+            // After 3s, fall back to the resting "N enabled" badge so
+            // the user gets a passive scenario count instead of a stale
+            // "Saved ✓" sitting forever.
+            setTimeout(function () {
+              if (!scenariosDirty) {
+                scenariosStatus.textContent = "";
+                updateScenariosCount();
+              }
+            }, 3000);
+            const btn = document.getElementById("events-refresh");
+            if (btn) btn.click();
+          } catch (err) {
+            scenariosStatus.textContent = "Failed: " + err.message;
+            scenariosStatus.className = "text-xs text-red-700";
+          } finally {
+            scenariosSaveBtn.disabled = false;
+            scenariosSaveBtn.classList.remove("opacity-50", "cursor-not-allowed");
+          }
+        });
+      }
+
+      // ---- events tab: filter + clear ----
+      const evKindSel = document.getElementById("events-filter-kind");
+      const evStatusSel = document.getElementById("events-filter-status");
+      const evQ = document.getElementById("events-filter-q");
+      const evRefresh = document.getElementById("events-refresh");
+      const evClear = document.getElementById("events-clear-btn");
+      const evWrap = document.getElementById("events-table-wrap");
+
+      function eventsQueryString() {
+        const params = new URLSearchParams();
+        if (evKindSel && evKindSel.value) params.set("kind", evKindSel.value);
+        if (evStatusSel && evStatusSel.value) params.set("status", evStatusSel.value);
+        if (evQ && evQ.value.trim()) params.set("q", evQ.value.trim());
+        const qs = params.toString();
+        return qs ? "?" + qs : "";
+      }
+
+      async function refreshEvents() {
+        if (!evWrap) return;
+        try {
+          const r = await fetch("/projects/" + projectId + "/events" + eventsQueryString());
+          if (!r.ok) return;
+          evWrap.innerHTML = await r.text();
+        } catch (_) { /* network blip — keep the existing table */ }
+      }
+
+      if (evKindSel) evKindSel.addEventListener("change", refreshEvents);
+      if (evStatusSel) evStatusSel.addEventListener("change", refreshEvents);
+      let evQTimer = null;
+      if (evQ) {
+        evQ.addEventListener("input", function () {
+          clearTimeout(evQTimer);
+          evQTimer = setTimeout(refreshEvents, 250);
+        });
+      }
+      if (evRefresh) evRefresh.addEventListener("click", refreshEvents);
+      if (evClear) {
+        evClear.addEventListener("click", async function () {
+          if (!confirm("Permanently delete all events for this project?")) return;
+          try {
+            const r = await fetch("/api/projects/" + projectId + "/events", { method: "DELETE" });
+            if (!r.ok) {
+              const err = await r.json().catch(function () { return {}; });
+              alert("Failed: " + (err.detail || ("HTTP " + r.status)));
+              return;
+            }
+            refreshEvents();
+          } catch (err) {
+            alert("Failed: " + err.message);
+          }
+        });
+      }
+
+      function escapeHtml(s) {
+        return String(s == null ? "" : s)
+          .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+      }
+
+      // ---- devices tab ----
+      const zonesList = document.getElementById("zones-list");
+      const devicesList = document.getElementById("devices-list");
+      const cfgErrors = document.getElementById("cfg-errors");
+      const cfgMetaState = document.getElementById("cfg-meta-state");
+      const cfgMetaPath = document.getElementById("cfg-meta-path");
+      const zoneModal = document.getElementById("zone-modal");
+      const deviceModal = document.getElementById("device-modal");
+      const zoneForm = document.getElementById("zone-form");
+      const deviceForm = document.getElementById("device-form");
+      const deviceTypeSelect = document.getElementById("device-type-select");
+      const deviceTypeDesc = document.getElementById("device-type-description");
+      const deviceMetaFields = document.getElementById("device-metadata-fields");
+      const deviceFormError = document.getElementById("device-form-error");
+      const deviceFormSubmit = document.getElementById("device-form-submit");
+      const deviceModalTitle = document.getElementById("device-modal-title");
+
+      let sensorCatalog = [];
+      let currentConfig = null;
+
+      function showModal(id) {
+        document.getElementById(id).classList.remove("hidden");
+        document.getElementById(id).classList.add("flex");
+      }
+      function hideModal(id) {
+        const el = document.getElementById(id);
+        el.classList.add("hidden");
+        el.classList.remove("flex");
+      }
+      document.querySelectorAll("[data-close-modal]").forEach((btn) => {
+        btn.addEventListener("click", () => hideModal(btn.dataset.closeModal));
+      });
+
+      function showCfgError(msg) {
+        cfgErrors.classList.remove("hidden");
+        cfgErrors.textContent = msg;
+        clearTimeout(showCfgError._t);
+        showCfgError._t = setTimeout(() => cfgErrors.classList.add("hidden"), 5000);
+      }
+
+      async function loadSensorCatalog() {
+        if (sensorCatalog.length) return sensorCatalog;
+        const r = await fetch("/api/sensor-types");
+        const body = await r.json();
+        sensorCatalog = body.sensor_types || [];
+
+      }
+
+      function renderMeta(meta) {
+        if (!meta) return;
+        cfgMetaPath.textContent = meta.managed_path || "—";
+        const isValid = !!meta.valid;
+        const exists = !!meta.exists;
+        let label = "no config yet";
+        let dot = "bg-gray-400";
+        let bg = "bg-gray-100 text-gray-600";
+        if (exists && isValid) {
+
+          dot = "bg-green-500";
+          bg = "bg-green-50 text-green-700";
+        } else if (exists && !isValid) {
+          label = "invalid: " + (meta.errors || []).join("; ");
+          dot = "bg-red-500";
+          bg = "bg-red-50 text-red-700";
+        }
+        cfgMetaState.className = "inline-flex items-center gap-1 rounded-full font-medium px-2.5 py-1 " + bg;
+        cfgMetaState.innerHTML =
+          '<span class="h-1.5 w-1.5 rounded-full ' + dot + '"></span>' +
+          '<span>' + escapeHtml(label) + '</span>';
+      }
+
+      function renderZones(cfg) {
+        const zones = ((cfg.building || {}).zones) || [];
+        if (!zones.length) {
+          zonesList.innerHTML = '<div class="text-gray-500 py-6 text-center">No rooms yet. Add one to start.</div>';
+          return;
+        }
+        zonesList.innerHTML = zones.map((z) => {
+          const cov = z.monitoring_coverage || {};
+          const status = cov.status || "no_profile";
+          const statusColors = {
+            ok: "bg-green-100 text-green-800",
+            partial: "bg-yellow-100 text-yellow-800",
+            missing: "bg-red-100 text-red-800",
+            no_profile: "bg-gray-100 text-gray-600",
+          };
+          const sCls = statusColors[status] || statusColors.no_profile;
+          const profileLabel = cov.profile_id
+            ? cov.profile_id + (cov.profile_inferred ? " (inferred)" : "")
+            : "no profile";
+          const rtLabel = z.room_type
+            ? z.room_type + (z.room_type_inferred ? " (inferred)" : "")
+            : "—";
+          const hvacBadge = z.hvac_zone_id
+            ? '<span class="inline-flex items-center rounded-full bg-blue-50 text-blue-700 text-[10px] font-medium px-2 py-0.5">HVAC: ' + escapeHtml(z.hvac_zone_id) + '</span>'
+            : '<span class="inline-flex items-center rounded-full bg-gray-100 text-gray-500 text-[10px] font-medium px-2 py-0.5">no HVAC</span>';
+          const intentBadge = z.monitoring_intent
+            ? '<span class="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-medium px-2 py-0.5">intent: ' + escapeHtml(z.monitoring_intent) + '</span>'
+            : '';
+          const richnessBadge = z.monitoring_richness
+            ? '<span class="inline-flex items-center rounded-full bg-indigo-50 text-indigo-700 text-[10px] font-medium px-2 py-0.5">richness: ' + escapeHtml(z.monitoring_richness) + '</span>'
+            : '';
+          return (
+            '<div class="rounded-lg border border-gray-200 px-3 py-2">' +
+              '<div class="flex items-center justify-between gap-3">' +
+                '<div class="min-w-0 flex-1">' +
+                  '<div class="font-medium truncate">' + escapeHtml(z.name) + '</div>' +
+                  '<div class="text-xs text-gray-500 font-mono truncate">' + escapeHtml(z.id) +
+                    (z.area_m2 ? " · " + z.area_m2 + " m²" : "") +
+                    (z.capacity ? " · cap " + z.capacity : "") +
+                    (z.floor_id ? " · " + escapeHtml(z.floor_id) : "") +
+                  '</div>' +
+                '</div>' +
+                '<div class="flex items-center gap-2">' +
+                  '<button type="button" data-zone-edit="' + escapeHtml(z.id) + '" class="text-xs text-gray-700 hover:text-gray-900">Edit</button>' +
+                  '<button type="button" data-zone-remove="' + escapeHtml(z.id) + '" class="text-xs text-red-600 hover:text-red-800">Remove</button>' +
+                '</div>' +
+              '</div>' +
+              '<div class="flex flex-wrap gap-1 mt-1.5">' +
+                '<span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 text-[10px] font-medium px-2 py-0.5">type: ' + escapeHtml(rtLabel) + '</span>' +
+                '<span class="inline-flex items-center rounded-full ' + sCls + ' text-[10px] font-medium px-2 py-0.5">' + escapeHtml(status) + '</span>' +
+                '<span class="inline-flex items-center rounded-full bg-gray-100 text-gray-700 text-[10px] font-medium px-2 py-0.5">profile: ' + escapeHtml(profileLabel) + '</span>' +
+                intentBadge +
+                richnessBadge +
+                hvacBadge +
+              '</div>' +
+            '</div>'
+          );
+        }).join("");
+        zonesList.querySelectorAll("[data-zone-remove]").forEach((b) => {
+          b.addEventListener("click", () => removeZone(b.dataset.zoneRemove));
+        });
+        zonesList.querySelectorAll("[data-zone-edit]").forEach((b) => {
+          b.addEventListener("click", () => openZoneModal(b.dataset.zoneEdit));
+        });
+      }
+
+      function renderHvacZones(cfg) {
+        const hvacList = document.getElementById("hvac-list");
+        const warnings = document.getElementById("hvac-warnings");
+        const zones = ((cfg.building || {}).hvac_zones) || [];
+        const ann = (cfg._annotations || {}).hvac_summary || {};
+        if (!zones.length) {
+          hvacList.innerHTML = '<div class="text-gray-500 py-6 text-center">No HVAC zones yet. Add one to wire rooms to a system.</div>';
+        } else {
+          hvacList.innerHTML = zones.map((h) => {
+            const served = (h.served_room_count != null) ? h.served_room_count : "—";
+            const sub = [];
+            if (h.system_type) sub.push(escapeHtml(h.system_type));
+            if (h.system_id) sub.push(escapeHtml(h.system_id));
+            if (h.setpoint_c != null) sub.push(h.setpoint_c + " °C");
+            if (h.capacity_kw != null) sub.push(h.capacity_kw + " kW");
+            return (
+              '<div class="rounded-lg border border-gray-200 px-3 py-2 flex items-center justify-between">' +
+                '<div class="min-w-0 flex-1">' +
+                  '<div class="font-medium truncate">' + escapeHtml(h.name || h.id) + '</div>' +
+                  '<div class="text-xs text-gray-500 font-mono truncate">' + escapeHtml(h.id) +
+                    (sub.length ? " · " + sub.join(" · ") : "") +
+                    ' · serves ' + served + ' room(s)' +
+                  '</div>' +
+                '</div>' +
+                '<button type="button" data-hvac-remove="' + escapeHtml(h.id) + '" class="text-xs text-red-600 hover:text-red-800">Remove</button>' +
+              '</div>'
+            );
+          }).join("");
+          hvacList.querySelectorAll("[data-hvac-remove]").forEach((b) => {
+            b.addEventListener("click", () => removeHvacZone(b.dataset.hvacRemove));
+          });
+        }
+        const orphans = ann.orphan_hvac_zones || [];
+        const unknown = ann.unknown_hvac_zone_refs || [];
+        const msgs = [];
+        if (orphans.length) msgs.push("Orphan HVAC zones (no rooms): " + orphans.join(", "));
+        if (unknown.length) msgs.push("Rooms point to unknown HVAC zones: " + unknown.join(", "));
+        if (msgs.length) {
+          warnings.classList.remove("hidden");
+          warnings.textContent = "⚠️ " + msgs.join(" · ");
+        } else {
+          warnings.classList.add("hidden");
+          warnings.textContent = "";
+        }
+      }
+
+      function renderDevices(cfg) {
+        const devices = cfg.devices || [];
+        if (!devices.length) {
+          devicesList.innerHTML = '<div class="text-gray-500 py-6 text-center">No devices yet. Add one to start emitting telemetry.</div>';
+          return;
+        }
+        devicesList.innerHTML = devices.map((d) => {
+          const typeMeta = sensorCatalog.find((s) => s.id === d.type);
+          const typeLabel = typeMeta ? typeMeta.name : d.type;
+          const impl = typeMeta && typeMeta.implemented === false ? ' <span class="text-amber-700 text-xs">(planned)</span>' : '';
+            return (
+            '<div class="rounded-lg border border-gray-200 px-3 py-2 flex items-center justify-between gap-3">' +
+              '<div class="min-w-0 flex-1">' +
+                '<div class="font-medium truncate">' + escapeHtml(d.name) + impl + '</div>' +
+                '<div class="text-xs text-gray-500 font-mono truncate">' + escapeHtml(d.device_eui) + ' · ' + escapeHtml(typeLabel) + ' · ' + escapeHtml(d.zone_id) + '</div>' +
+              '</div>' +
+              '<div class="flex items-center gap-2">' +
+                '<button type="button" data-device-edit="' + escapeHtml(d.device_eui) + '" class="text-xs text-gray-700 hover:text-gray-900">Edit</button>' +
+                '<button type="button" data-device-remove="' + escapeHtml(d.device_eui) + '" class="text-xs text-red-600 hover:text-red-800">Remove</button>' +
+              '</div>' +
+            '</div>'
+          );
+        }).join("");
+        devicesList.querySelectorAll("[data-device-edit]").forEach((b) => {
+          b.addEventListener("click", () => openDeviceModal(b.dataset.deviceEdit));
+        });
+        devicesList.querySelectorAll("[data-device-remove]").forEach((b) => {
+          b.addEventListener("click", () => removeDevice(b.dataset.deviceRemove));
+        });
+      }
+
+      function applyConfigPayload(body) {
+        currentConfig = body.config || {};
+        renderMeta(body.meta);
+        renderZones(currentConfig);
+        renderHvacZones(currentConfig);
+        renderDevices(currentConfig);
+        // Refresh dropdown options that depend on cfg state.
+        populateZoneWiringOptions();
+      }
+
+      async function loadConfig() {
+        const [cfgRes] = await Promise.all([
+          fetch("/api/projects/" + encodeURIComponent(projectId) + "/config"),
+          loadSensorCatalog(),
+        ]);
+        if (!cfgRes.ok) {
+          showCfgError("Failed to load config");
+
+        }
+        applyConfigPayload(await cfgRes.json());
+      }
+
+      // Zone actions
+      let roomTypesCache = null;
+      let monitoringProfilesCache = null;
+      let monitoringIntentsCache = null;
+      let richnessLevelsCache = null;
+
+      async function ensureRoomTypes() {
+        if (roomTypesCache) return roomTypesCache;
+        try {
+          const r = await fetch("/api/room-types");
+          const body = await r.json();
+          roomTypesCache = body.room_types || [];
+        } catch (e) {
+          roomTypesCache = [];
+        }
+        return roomTypesCache;
+      }
+
+      async function ensureMonitoringProfiles() {
+        if (monitoringProfilesCache) return monitoringProfilesCache;
+        try {
+          const r = await fetch("/api/monitoring-profiles");
+          const body = await r.json();
+          monitoringProfilesCache = body.monitoring_profiles || [];
+        } catch (e) {
+          monitoringProfilesCache = [];
+        }
+        return monitoringProfilesCache;
+      }
+
+      async function ensureMonitoringIntents() {
+        if (monitoringIntentsCache) return monitoringIntentsCache;
+        try {
+          const r = await fetch("/api/monitoring-intents");
+          const body = await r.json();
+          monitoringIntentsCache = body.monitoring_intents || [];
+        } catch (e) {
+          monitoringIntentsCache = [];
+        }
+        return monitoringIntentsCache;
+      }
+
+      async function ensureRichnessLevels() {
+        if (richnessLevelsCache) return richnessLevelsCache;
+        try {
+          const r = await fetch("/api/richness-levels");
+          const body = await r.json();
+          richnessLevelsCache = body.richness_levels || [];
+        } catch (e) {
+          richnessLevelsCache = [];
+        }
+        return richnessLevelsCache;
+      }
+
+      function populateZoneWiringOptions() {
+        const rtSel = document.getElementById("zone-room-type");
+        const mpSel = document.getElementById("zone-monitoring-profile");
+        const hvSel = document.getElementById("zone-hvac-zone");
+        const miSel = document.getElementById("zone-monitoring-intent");
+        const mrSel = document.getElementById("zone-monitoring-richness");
+        if (!rtSel || !mpSel || !hvSel) return;
+        const prevRt = rtSel.value;
+        const prevMp = mpSel.value;
+        const prevHv = hvSel.value;
+        const prevMi = miSel ? miSel.value : "";
+        const prevMr = mrSel ? mrSel.value : "";
+        if (roomTypesCache) {
+          rtSel.innerHTML = '<option value="">— infer from name —</option>' +
+            roomTypesCache.map(rt =>
+              '<option value="' + escapeHtml(rt.id) + '">' + escapeHtml(rt.name || rt.id) + '</option>'
+            ).join("");
+          rtSel.value = prevRt;
+        }
+        if (monitoringProfilesCache) {
+          mpSel.innerHTML = '<option value="">— infer from room type —</option>' +
+            monitoringProfilesCache.map(p =>
+              '<option value="' + escapeHtml(p.id) + '">' + escapeHtml(p.name || p.id) + '</option>'
+            ).join("");
+          mpSel.value = prevMp;
+        }
+        if (miSel && monitoringIntentsCache) {
+          miSel.innerHTML = '<option value="">— use profile —</option>' +
+            monitoringIntentsCache.map(i =>
+              '<option value="' + escapeHtml(i.id) + '">' + escapeHtml(i.label || i.id) + '</option>'
+            ).join("");
+          miSel.value = prevMi;
+        }
+        if (mrSel && richnessLevelsCache) {
+          mrSel.innerHTML = '<option value="">— use profile —</option>' +
+            richnessLevelsCache.map(r =>
+              '<option value="' + escapeHtml(r.id) + '">' + escapeHtml(r.label || r.id) + '</option>'
+            ).join("");
+          mrSel.value = prevMr;
+        }
+        const hvacZones = ((currentConfig.building || {}).hvac_zones) || [];
+        hvSel.innerHTML = '<option value="">— none —</option>' +
+          hvacZones.map(h =>
+            '<option value="' + escapeHtml(h.id) + '">' + escapeHtml(h.name || h.id) + '</option>'
+          ).join("");
+        hvSel.value = prevHv;
+      }
+
+      let _recPreviewTimer = null;
+      async function refreshRecommendationPreview() {
+        const preview = document.getElementById("zone-rec-preview");
+        if (!preview) return;
+        const intent = (zoneForm.elements["monitoring_intent"]?.value || "").trim();
+        const richness = (zoneForm.elements["monitoring_richness"]?.value || "").trim();
+        const roomType = (zoneForm.elements["room_type"]?.value || "").trim();
+        if (!intent && !richness) {
+          preview.textContent = "Leave both blank to use the monitoring profile path.";
+          return;
+        }
+        try {
+          const params = new URLSearchParams();
+          if (roomType) params.set("room_type", roomType);
+          if (intent) params.set("intent", intent);
+          if (richness) params.set("richness", richness);
+          const r = await fetch("/api/monitoring-recommendations?" + params.toString());
+          const body = await r.json();
+          const devs = body.devices || [];
+          if (!devs.length) {
+            preview.textContent = "No recommendations.";
+            return;
+          }
+          // Summarize by type with role hints.
+          const parts = devs.map(d => {
+            const role = d.role && d.role !== d.type ? " (" + d.role + ")" : "";
+            return d.type + role;
+          });
+          preview.innerHTML = '<span class="font-semibold">Recommended:</span> ' + escapeHtml(parts.join(" + "));
+        } catch (e) {
+          preview.textContent = "Preview unavailable.";
+        }
+      }
+
+      function scheduleRecommendationPreview() {
+        clearTimeout(_recPreviewTimer);
+        _recPreviewTimer = setTimeout(refreshRecommendationPreview, 80);
+      }
+
+      async function openZoneModal(existingId) {
+        await Promise.all([
+          ensureRoomTypes(),
+          ensureMonitoringProfiles(),
+          ensureMonitoringIntents(),
+          ensureRichnessLevels(),
+        ]);
+        populateZoneWiringOptions();
+        zoneForm.reset();
+        const idField = zoneForm.elements["id"];
+        const modeField = zoneForm.elements["_mode"];
+        const origField = zoneForm.elements["_orig_id"];
+        const title = document.getElementById("zone-modal-title");
+        const submitBtn = document.getElementById("zone-form-submit");
+        const errBox = document.getElementById("zone-form-error");
+        errBox.classList.add("hidden");
+        if (existingId) {
+          const zones = ((currentConfig.building || {}).zones) || [];
+          const z = zones.find(x => x.id === existingId);
+          if (!z) return;
+          modeField.value = "edit";
+          origField.value = existingId;
+          idField.value = z.id;
+          idField.readOnly = true;
+          idField.classList.add("bg-gray-100");
+          zoneForm.elements["name"].value = z.name || "";
+          zoneForm.elements["area_m2"].value = z.area_m2 != null ? z.area_m2 : "";
+          zoneForm.elements["capacity"].value = z.capacity != null ? z.capacity : "";
+          // Only show explicit (non-inferred) room_type / profile.
+          zoneForm.elements["room_type"].value = z.room_type_inferred ? "" : (z.room_type || "");
+          zoneForm.elements["monitoring_profile"].value = z.monitoring_profile || "";
+          zoneForm.elements["monitoring_intent"].value = z.monitoring_intent || "";
+          zoneForm.elements["monitoring_richness"].value = z.monitoring_richness || "";
+          zoneForm.elements["hvac_zone_id"].value = z.hvac_zone_id || "";
+          zoneForm.elements["floor_id"].value = z.floor_id || "";
+          zoneForm.elements["exposure"].value = z.exposure || "";
+          zoneForm.elements["ventilation_quality"].value = z.ventilation_quality || "";
+          zoneForm.elements["infiltration_level"].value = z.infiltration_level || "";
+          title.textContent = "Edit room";
+          submitBtn.textContent = "Save changes";
+        } else {
+          modeField.value = "create";
+          origField.value = "";
+          idField.readOnly = false;
+          idField.classList.remove("bg-gray-100");
+          title.textContent = "New room";
+          submitBtn.textContent = "Add room";
+        }
+        refreshRecommendationPreview();
+        showModal("zone-modal");
+      }
+
+      document.getElementById("zone-add-btn").addEventListener("click", () => {
+        openZoneModal(null);
+      });
+
+      // Recompute the recommendation chip as the user picks intent/richness/room type.
+      ["zone-monitoring-intent", "zone-monitoring-richness", "zone-room-type"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("change", scheduleRecommendationPreview);
+      });
+
+      // Layout generator
+      const layoutForm = document.getElementById("layout-form");
+      const layoutArchetypeSel = document.getElementById("layout-archetype");
+      const layoutPreviewBtn = document.getElementById("layout-preview-btn");
+      const layoutApplyBtn = document.getElementById("layout-apply-btn");
+      const layoutStatus = document.getElementById("layout-status");
+      const layoutError = document.getElementById("layout-error");
+      const layoutPreview = document.getElementById("layout-preview");
+      let layoutLastSpec = null;
+      let archetypesCache = null;
+
+      async function ensureArchetypes() {
+        if (archetypesCache) return archetypesCache;
+        const r = await fetch("/api/building-archetypes");
+        const body = await r.json();
+        archetypesCache = body.archetypes || [];
+        layoutArchetypeSel.innerHTML = archetypesCache
+          .map(a => '<option value="' + a.id + '">' + a.name + '</option>')
+          .join("");
+        updateArchetypeDesc();
+        return archetypesCache;
+      }
+      function updateArchetypeDesc() {
+        const a = (archetypesCache || []).find(x => x.id === layoutArchetypeSel.value);
+        document.getElementById("layout-archetype-desc").textContent =
+          a ? (a.description || "—") : "—";
+      }
+      layoutArchetypeSel.addEventListener("change", updateArchetypeDesc);
+
+      document.getElementById("layout-generate-btn").addEventListener("click", async () => {
+        layoutForm.reset();
+        document.querySelector('#layout-form [name="total_area_m2"]').value = "1500";
+        document.querySelector('#layout-form [name="floors"]').value = "2";
+        layoutError.classList.add("hidden");
+        layoutPreview.classList.add("hidden");
+        layoutApplyBtn.disabled = true;
+        layoutStatus.textContent = "";
+        layoutLastSpec = null;
+        await ensureArchetypes();
+        showModal("layout-modal");
+      });
+
+      function readLayoutSpec() {
+        const fd = new FormData(layoutForm);
+        return {
+          archetype_id: fd.get("archetype_id"),
+          total_area_m2: Number(fd.get("total_area_m2")),
+          floors: Number(fd.get("floors")),
+          seed: fd.get("seed") ? Number(fd.get("seed")) : null,
+        };
+      }
+
+      function renderLayoutPreview(layout) {
+        const s = layout.summary || {};
+        document.getElementById("layout-summary").textContent =
+          (s.zone_count || 0) + " zones across " + Object.keys(s.by_floor || {}).length +
+          " floor(s), modeled " + (s.modeled_area_m2 || 0) + " m²";
+        const mix = Object.entries(s.by_room_type || {})
+          .sort((a, b) => b[1] - a[1])
+          .map(([rt, n]) => n + "× " + rt.replace(/_/g, " "))
+          .join(" · ");
+        document.getElementById("layout-bymix").textContent = mix;
+        const rows = (layout.zones || []).map(z =>
+          '<tr class="border-t border-gray-100">' +
+          '<td class="py-1 pr-2 font-mono text-[11px]">' + z.id + '</td>' +
+          '<td class="py-1 pr-2">' + (z.room_type || "—") + '</td>' +
+          '<td class="py-1 pr-2">' + (z.floor_id || "—") + '</td>' +
+          '<td class="py-1 pr-2 text-right">' + (z.area_m2 ?? "—") + '</td>' +
+          '<td class="py-1 text-right">' + (z.capacity ?? "—") + '</td>' +
+          '</tr>'
+        ).join("");
+        document.getElementById("layout-rows").innerHTML = rows;
+        layoutPreview.classList.remove("hidden");
+      }
+
+      layoutPreviewBtn.addEventListener("click", async () => {
+        layoutError.classList.add("hidden");
+        layoutStatus.textContent = "Generating…";
+        const spec = readLayoutSpec();
+        try {
+          const r = await fetch("/api/projects/" + encodeURIComponent(projectId) + "/generate-layout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(Object.assign({}, spec, { apply: false })),
+          });
+          const body = await r.json();
+          if (!r.ok) throw new Error(body.detail || "Failed to generate layout");
+          renderLayoutPreview(body.layout);
+          layoutLastSpec = spec;
+          layoutApplyBtn.disabled = false;
+          layoutStatus.textContent = "Preview ready — review and Apply to replace zones.";
+        } catch (err) {
+          layoutError.textContent = String(err.message || err);
+          layoutError.classList.remove("hidden");
+          layoutApplyBtn.disabled = true;
+          layoutStatus.textContent = "";
+        }
+      });
+
+      layoutApplyBtn.addEventListener("click", async () => {
+        if (!layoutLastSpec) return;
+        if (!confirm("Replace ALL existing zones with the generated layout?\n(Devices currently assigned to zones must still map to a generated zone, or the request will be rejected.)")) return;
+        layoutError.classList.add("hidden");
+        layoutStatus.textContent = "Applying…";
+        try {
+          const r = await fetch("/api/projects/" + encodeURIComponent(projectId) + "/generate-layout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(Object.assign({}, layoutLastSpec, { apply: true })),
+          });
+          const body = await r.json();
+          if (!r.ok) throw new Error(body.detail || "Failed to apply layout");
+          hideModal("layout-modal");
+          applyConfigPayload(body);
+        } catch (err) {
+          layoutError.textContent = String(err.message || err);
+          layoutError.classList.remove("hidden");
+          layoutStatus.textContent = "";
+        }
+      });
+
+      zoneForm.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        const errBox = document.getElementById("zone-form-error");
+        errBox.classList.add("hidden");
+        const fd = new FormData(zoneForm);
+        const mode = fd.get("_mode") || "create";
+        const origId = fd.get("_orig_id") || "";
+        const payload = {
+          id: fd.get("id"),
+          name: fd.get("name"),
+          area_m2: fd.get("area_m2") ? Number(fd.get("area_m2")) : null,
+          capacity: fd.get("capacity") ? Number(fd.get("capacity")) : null,
+          room_type: (fd.get("room_type") || "").trim() || null,
+          monitoring_profile: (fd.get("monitoring_profile") || "").trim() || null,
+          monitoring_intent: (fd.get("monitoring_intent") || "").trim() || null,
+          monitoring_richness: (fd.get("monitoring_richness") || "").trim() || null,
+          hvac_zone_id: (fd.get("hvac_zone_id") || "").trim() || null,
+          floor_id: (fd.get("floor_id") || "").trim() || null,
+          exposure: (fd.get("exposure") || "").trim() || null,
+          ventilation_quality: (fd.get("ventilation_quality") || "").trim() || null,
+          infiltration_level: (fd.get("infiltration_level") || "").trim() || null,
+        };
+        let url, method;
+        if (mode === "edit" && origId) {
+          url = "/api/projects/" + encodeURIComponent(projectId) + "/zones/" + encodeURIComponent(origId);
+          method = "PUT";
+        } else {
+          url = "/api/projects/" + encodeURIComponent(projectId) + "/zones";
+          method = "POST";
+        }
+        const r = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          errBox.classList.remove("hidden");
+          errBox.textContent = body.detail || "Failed to save zone";
+          return;
+        }
+        hideModal("zone-modal");
+        applyConfigPayload(body);
+      });
+
+      async function removeZone(zid) {
+        if (!confirm("Remove room '" + zid + "'?")) return;
+        const r = await fetch("/api/projects/" + encodeURIComponent(projectId) + "/zones/" + encodeURIComponent(zid), { method: "DELETE" });
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          showCfgError(body.detail || "Failed to remove room");
+
+        }
+        applyConfigPayload(body);
+      }
+
+      // HVAC zone actions
+      const hvacForm = document.getElementById("hvac-form");
+      const hvacAddBtn = document.getElementById("hvac-add-btn");
+      if (hvacAddBtn) {
+        hvacAddBtn.addEventListener("click", () => {
+          hvacForm.reset();
+          document.getElementById("hvac-form-error").classList.add("hidden");
+          showModal("hvac-modal");
+        });
+      }
+      if (hvacForm) {
+        hvacForm.addEventListener("submit", async (ev) => {
+          ev.preventDefault();
+          const errBox = document.getElementById("hvac-form-error");
+          errBox.classList.add("hidden");
+          const fd = new FormData(hvacForm);
+          const payload = {
+            id: (fd.get("id") || "").trim(),
+            name: (fd.get("name") || "").trim() || null,
+            system_type: (fd.get("system_type") || "").trim() || null,
+            system_id: (fd.get("system_id") || "").trim() || null,
+            setpoint_c: fd.get("setpoint_c") ? Number(fd.get("setpoint_c")) : null,
+            capacity_kw: fd.get("capacity_kw") ? Number(fd.get("capacity_kw")) : null,
+          };
+          const r = await fetch(
+            "/api/projects/" + encodeURIComponent(projectId) + "/hvac-zones",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            }
+          );
+          const body = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            errBox.classList.remove("hidden");
+            errBox.textContent = body.detail || "Failed to add HVAC zone";
+            return;
+          }
+          hideModal("hvac-modal");
+          applyConfigPayload(body);
+        });
+      }
+
+      async function removeHvacZone(hid) {
+        if (!confirm("Remove HVAC zone '" + hid + "'?")) return;
+        const r = await fetch(
+          "/api/projects/" + encodeURIComponent(projectId) + "/hvac-zones/" + encodeURIComponent(hid),
+          { method: "DELETE" }
+        );
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          showCfgError(body.detail || "Failed to remove HVAC zone");
+          return;
+        }
+        applyConfigPayload(body);
+      }
+
+      // Device actions
+      function buildMetadataFields(typeId, existing) {
+        deviceMetaFields.innerHTML = "";
+        const st = sensorCatalog.find((s) => s.id === typeId);
+        deviceTypeDesc.textContent = st ? st.description || "" : "";
+        if (!st) return;
+        st.metadata.forEach((f) => {
+          const id = "meta-" + f.key;
+          const val = existing && existing[f.key] != null ? existing[f.key] : (f.default != null ? f.default : "");
+          const required = f.required ? ' required' : '';
+          let input;
+          if (f.kind === "choice") {
+            const opts = (f.choices || []).map((c) => '<option value="' + escapeHtml(c) + '"' + (String(val) === String(c) ? " selected" : "") + '>' + escapeHtml(c) + '</option>').join("");
+            input = '<select id="' + id + '" name="meta:' + escapeHtml(f.key) + '" class="w-full rounded-lg border-gray-300"' + required + '>' + opts + '</select>';
+          } else if (f.kind === "boolean") {
+            input = '<input id="' + id + '" name="meta:' + escapeHtml(f.key) + '" type="checkbox" ' + (val ? "checked" : "") + ' class="rounded border-gray-300">';
+          } else {
+            const type = (f.kind === "integer" || f.kind === "number") ? "number" : "text";
+            const step = f.kind === "integer" ? "1" : (f.step != null ? String(f.step) : "any");
+            const minAttr = f.min != null ? ' min="' + f.min + '"' : '';
+            const maxAttr = f.max != null ? ' max="' + f.max + '"' : '';
+            input = '<input id="' + id + '" name="meta:' + escapeHtml(f.key) + '" type="' + type + '" step="' + step + '"' + minAttr + maxAttr + ' value="' + escapeHtml(val) + '" class="w-full rounded-lg border-gray-300"' + required + '>';
+          }
+          const desc = f.description ? '<p class="text-xs text-gray-500 mt-1">' + escapeHtml(f.description) + '</p>' : '';
+          deviceMetaFields.insertAdjacentHTML("beforeend",
+            '<div>' +
+              '<label class="block text-xs text-gray-500 mb-1" for="' + id + '">' + escapeHtml(f.label) + (f.required ? ' *' : '') + '</label>' +
+              input + desc +
+            '</div>'
+          );
+        });
+      }
+
+      function populateDeviceTypeSelect(currentType) {
+        deviceTypeSelect.innerHTML = sensorCatalog.map((s) => {
+          const tag = s.implemented === false ? " (planned)" : "";
+          return '<option value="' + escapeHtml(s.id) + '"' + (s.id === currentType ? " selected" : "") + '>' + escapeHtml(s.name) + tag + '</option>';
+        }).join("");
+      }
+
+      function populateZoneSelect(currentZone) {
+        const zones = ((currentConfig || {}).building || {}).zones || [];
+        const select = deviceForm.querySelector('[name="zone_id"]');
+        select.innerHTML = zones.map((z) => '<option value="' + escapeHtml(z.id) + '"' + (z.id === currentZone ? " selected" : "") + '>' + escapeHtml(z.name) + ' (' + escapeHtml(z.id) + ')</option>').join("");
+      }
+
+      function openDeviceModal(editEui) {
+        deviceForm.reset();
+        deviceFormError.classList.add("hidden");
+        const existing = editEui ? (currentConfig.devices || []).find((d) => d.device_eui === editEui) : null;
+        const mode = existing ? "edit" : "create";
+        deviceForm._mode.value = mode;
+        deviceForm._orig_eui.value = existing ? existing.device_eui : "";
+        deviceModalTitle.textContent = existing ? "Edit device" : "New device";
+        deviceFormSubmit.textContent = existing ? "Save changes" : "Add device";
+
+        const defaultType = existing ? existing.type : (sensorCatalog[0] && sensorCatalog[0].id);
+        populateDeviceTypeSelect(defaultType);
+        populateZoneSelect(existing ? existing.zone_id : null);
+        deviceForm.name.value = existing ? existing.name : "";
+        deviceForm.device_eui.value = existing ? existing.device_eui : "";
+        if (existing) {
+          deviceForm.device_eui.setAttribute("readonly", "readonly");
+        } else {
+          deviceForm.device_eui.removeAttribute("readonly");
+        }
+        buildMetadataFields(defaultType, existing ? existing.metadata : null);
+        showModal("device-modal");
+      }
+
+      document.getElementById("device-add-btn").addEventListener("click", () => {
+        if (!((currentConfig || {}).building || {}).zones || !currentConfig.building.zones.length) {
+          showCfgError("Add at least one zone before adding a device.");
+
+        }
+        openDeviceModal(null);
+      });
+
+      deviceTypeSelect.addEventListener("change", () => {
+        buildMetadataFields(deviceTypeSelect.value, null);
+      });
+
+      document.getElementById("device-eui-generate").addEventListener("click", async () => {
+        const name = deviceForm.name.value || "device";
+        const r = await fetch("/api/projects/" + encodeURIComponent(projectId) + "/devices/generate-eui", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name }),
+        });
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          deviceFormError.classList.remove("hidden");
+          deviceFormError.textContent = body.detail || "Failed to generate EUI";
+
+        }
+        deviceForm.device_eui.value = body.device_eui;
+      });
+
+      deviceForm.addEventListener("submit", async (ev) => {
+        ev.preventDefault();
+        deviceFormError.classList.add("hidden");
+        const fd = new FormData(deviceForm);
+        const metadata = {};
+        for (const [k, v] of fd.entries()) {
+          if (!k.startsWith("meta:")) continue;
+          const key = k.slice(5);
+          if (v === "" || v == null) continue;
+          // Coerce numbers when the input was type=number
+          const el = deviceForm.querySelector('[name="' + CSS.escape(k) + '"]');
+          if (el && el.type === "number") {
+            const num = Number(v);
+            if (!Number.isNaN(num)) {
+              metadata[key] = num;
+              continue;
+            }
+          }
+          if (el && el.type === "checkbox") {
+            metadata[key] = el.checked;
+            continue;
+          }
+          metadata[key] = v;
+        }
+        const mode = fd.get("_mode");
+        const body = {
+          device_eui: fd.get("device_eui"),
+          name: fd.get("name"),
+          type: fd.get("type"),
+          zone_id: fd.get("zone_id"),
+          metadata,
+        };
+        let url, method;
+        if (mode === "edit") {
+          const orig = fd.get("_orig_eui");
+          url = "/api/projects/" + encodeURIComponent(projectId) + "/devices/" + encodeURIComponent(orig);
+          method = "PUT";
+          // Server ignores eui on update, but harmless to send.
+        } else {
+          url = "/api/projects/" + encodeURIComponent(projectId) + "/devices";
+          method = "POST";
+        }
+        const r = await fetch(url, {
+          method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(body),
+        });
+        const payload = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          deviceFormError.classList.remove("hidden");
+          deviceFormError.textContent = payload.detail || "Failed to save device";
+
+        }
+        hideModal("device-modal");
+        applyConfigPayload(payload);
+      });
+
+      async function removeDevice(eui) {
+        if (!confirm("Remove device '" + eui + "'?")) return;
+        const r = await fetch("/api/projects/" + encodeURIComponent(projectId) + "/devices/" + encodeURIComponent(eui), { method: "DELETE" });
+        const body = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          showCfgError(body.detail || "Failed to remove device");
+
+        }
+        applyConfigPayload(body);
+      }
+
+      // ---- bulk add ----
+      const bulkBtn = document.getElementById("device-bulk-btn");
+      const bulkForm = document.getElementById("bulk-form");
+      const bulkRows = document.getElementById("bulk-rows");
+      const bulkRowAdd = document.getElementById("bulk-row-add");
+      const bulkSummary = document.getElementById("bulk-summary");
+      const bulkFormError = document.getElementById("bulk-form-error");
+
+      function bulkRowHtml(rowIdx) {
+        const typeOpts = sensorCatalog.map((s) => {
+          const tag = s.implemented === false ? " (planned)" : "";
+          return '<option value="' + escapeHtml(s.id) + '">' + escapeHtml(s.name) + tag + '</option>';
+        }).join("");
+        const zones = ((currentConfig || {}).building || {}).zones || [];
+        const zoneOpts = '<option value="">— any zone (use strategy) —</option>' +
+          zones.map((z) => '<option value="' + escapeHtml(z.id) + '">' + escapeHtml(z.name) + ' (' + escapeHtml(z.id) + ')</option>').join("");
+          return (
+          '<div class="bulk-row grid grid-cols-12 gap-2 items-end border border-gray-200 rounded-lg p-2" data-row="' + rowIdx + '">' +
+            '<div class="col-span-5">' +
+              '<label class="block text-xs text-gray-500 mb-1">Sensor type</label>' +
+              '<select name="type" class="w-full rounded-lg border-gray-300 text-sm bulk-type-select">' + typeOpts + '</select>' +
+            '</div>' +
+            '<div class="col-span-2">' +
+              '<label class="block text-xs text-gray-500 mb-1">Count</label>' +
+              '<input name="count" type="number" min="1" max="1000" step="1" value="5" class="w-full rounded-lg border-gray-300 text-sm bulk-count">' +
+            '</div>' +
+            '<div class="col-span-4">' +
+              '<label class="block text-xs text-gray-500 mb-1">Zone (optional)</label>' +
+              '<select name="zone_id" class="w-full rounded-lg border-gray-300 text-sm">' + zoneOpts + '</select>' +
+            '</div>' +
+            '<div class="col-span-1 flex justify-end">' +
+              '<button type="button" class="text-red-600 hover:text-red-800 text-xs bulk-row-remove">Remove</button>' +
+            '</div>' +
+            '<div class="col-span-12 bulk-extra"></div>' +
+          '</div>'
+        );
+      }
+
+      function attachBulkRowHandlers(row) {
+        row.querySelector(".bulk-row-remove").addEventListener("click", () => {
+          row.remove();
+          updateBulkSummary();
+        });
+        row.querySelector(".bulk-count").addEventListener("input", updateBulkSummary);
+        const typeSel = row.querySelector(".bulk-type-select");
+        typeSel.addEventListener("change", () => {
+          buildBulkExtraFields(row, typeSel.value);
+          updateBulkSummary();
+        });
+        buildBulkExtraFields(row, typeSel.value);
+      }
+
+      function buildBulkExtraFields(row, typeId) {
+        // For sensor types that have a *required* choice field (e.g.
+        // energy_meter.submeter) we surface it inline so the user can
+        // override the default per row.
+        const st = sensorCatalog.find((s) => s.id === typeId);
+        const extra = row.querySelector(".bulk-extra");
+        extra.innerHTML = "";
+        if (!st) return;
+        const required = st.metadata.filter((f) => f.required && f.kind === "choice");
+        if (!required.length) return;
+        const html = required.map((f) => {
+          const opts = (f.choices || []).map((c) => '<option value="' + escapeHtml(c) + '"' + (String(f.default) === String(c) ? " selected" : "") + '>' + escapeHtml(c) + '</option>').join("");
+            return (
+            '<div class="mt-2">' +
+              '<label class="block text-xs text-gray-500 mb-1">' + escapeHtml(f.label) + '</label>' +
+              '<select name="meta:' + escapeHtml(f.key) + '" class="w-full rounded-lg border-gray-300 text-sm">' + opts + '</select>' +
+            '</div>'
+          );
+        }).join("");
+        extra.innerHTML = html;
+      }
+
+      function updateBulkSummary() {
+        const rows = bulkRows.querySelectorAll(".bulk-row");
+        let total = 0;
+        rows.forEach((r) => {
+          const n = parseInt(r.querySelector(".bulk-count").value || "0", 10);
+          if (!isNaN(n) && n > 0) total += n;
+        });
+        bulkSummary.textContent = total ? ("Will create " + total + " device(s).") : "";
+      }
+
+      function addBulkRow() {
+        const idx = bulkRows.children.length;
+        bulkRows.insertAdjacentHTML("beforeend", bulkRowHtml(idx));
+        const row = bulkRows.lastElementChild;
+        attachBulkRowHandlers(row);
+      }
+
+      if (bulkBtn) {
+        bulkBtn.addEventListener("click", () => {
+          if (!((currentConfig || {}).building || {}).zones || !currentConfig.building.zones.length) {
+            showCfgError("Add at least one zone before bulk-adding devices.");
+
+          }
+          bulkForm.reset();
+          bulkRows.innerHTML = "";
+          bulkFormError.classList.add("hidden");
+          addBulkRow();
+          updateBulkSummary();
+          showModal("bulk-modal");
+        });
+      }
+      if (bulkRowAdd) {
+        bulkRowAdd.addEventListener("click", addBulkRow);
+      }
+
+      if (bulkForm) {
+        bulkForm.addEventListener("submit", async (ev) => {
+          ev.preventDefault();
+          bulkFormError.classList.add("hidden");
+          const fd = new FormData(bulkForm);
+          const items = [];
+          bulkRows.querySelectorAll(".bulk-row").forEach((row) => {
+            const type = row.querySelector('[name="type"]').value;
+            const count = parseInt(row.querySelector('[name="count"]').value || "0", 10);
+            const zone_id = row.querySelector('[name="zone_id"]').value || null;
+            if (!count || count <= 0) return;
+            const metadata = {};
+            row.querySelectorAll('[name^="meta:"]').forEach((el) => {
+              const k = el.name.slice(5);
+              if (el.value !== "" && el.value != null) metadata[k] = el.value;
+            });
+            const item = { type, count };
+            if (zone_id) item.zone_id = zone_id;
+            if (Object.keys(metadata).length) item.metadata = metadata;
+            items.push(item);
+          });
+          if (!items.length) {
+            bulkFormError.classList.remove("hidden");
+            bulkFormError.textContent = "Add at least one sensor row with count ≥ 1.";
+
+          }
+          const body = {
+            items,
+            zone_strategy: fd.get("zone_strategy") || "round_robin",
+            name_prefix: (fd.get("name_prefix") || "").trim() || null,
+          };
+          const r = await fetch("/api/projects/" + encodeURIComponent(projectId) + "/devices/bulk", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          const payload = await r.json().catch(() => ({}));
+          if (!r.ok) {
+            bulkFormError.classList.remove("hidden");
+            bulkFormError.textContent = payload.detail || "Bulk add failed";
+
+          }
+          hideModal("bulk-modal");
+          applyConfigPayload(payload);
+        });
+      }
+
+      // ---- Auto-provision devices ----
+      const autoprovBtn = document.getElementById("device-autoprov-btn");
+      const autoprovModal = document.getElementById("autoprov-modal");
+      const autoprovPreviewBtn = document.getElementById("autoprov-preview-btn");
+      const autoprovApplyBtn = document.getElementById("autoprov-apply-btn");
+      const autoprovOverwrite = document.getElementById("autoprov-overwrite");
+      const autoprovSummary = document.getElementById("autoprov-summary");
+      const autoprovError = document.getElementById("autoprov-error");
+      const autoprovResult = document.getElementById("autoprov-result");
+
+      function escAP(s) {
+        return String(s == null ? "" : s).replace(/[&<>"']/g, (c) => (
+          {"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c]
+        ));
+      }
+
+      function renderAutoprov(payload) {
+        const toAdd = payload.to_add || [];
+        const skipped = payload.skipped || [];
+        autoprovSummary.classList.remove("hidden");
+        autoprovSummary.textContent =
+          `Plan: ${toAdd.length} device(s) to add, ${skipped.length} skipped.`;
+        if (!toAdd.length && !skipped.length) {
+          autoprovResult.innerHTML = '<div class="text-gray-500">Nothing to provision.</div>';
+          return;
+        }
+        const rowsAdd = toAdd.map((d) => `
+          <tr class="border-t border-gray-200">
+            <td class="px-2 py-1">${escAP(d.zone_name)} <span class="text-gray-400">(${escAP(d.zone_id)})</span></td>
+            <td class="px-2 py-1"><code>${escAP(d.sensor_type)}</code></td>
+            <td class="px-2 py-1">${escAP(d.name)}</td>
+            <td class="px-2 py-1"><code class="text-gray-500">${escAP(d.device_eui)}</code></td>
+            <td class="px-2 py-1 text-gray-500">${escAP(d.profile_id || "")}${d.profile_inferred ? " (inferred)" : ""}</td>
+          </tr>`).join("");
+        const rowsSkip = skipped.map((d) => `
+          <tr class="border-t border-gray-100 text-gray-500">
+            <td class="px-2 py-1">${escAP(d.zone_name)} <span class="text-gray-400">(${escAP(d.zone_id)})</span></td>
+            <td class="px-2 py-1"><code>${escAP(d.sensor_type || "—")}</code></td>
+            <td class="px-2 py-1 italic" colspan="3">${escAP(d.reason)}</td>
+          </tr>`).join("");
+        autoprovResult.innerHTML = `
+          ${toAdd.length ? `
+            <div class="mt-2 mb-1 font-semibold text-gray-700">To add (${toAdd.length})</div>
+            <table class="w-full text-xs border border-gray-200 rounded">
+              <thead class="bg-gray-50 text-gray-600 text-left">
+                <tr><th class="px-2 py-1">Zone</th><th class="px-2 py-1">Sensor type</th><th class="px-2 py-1">Name</th><th class="px-2 py-1">EUI</th><th class="px-2 py-1">Profile</th></tr>
+              </thead>
+              <tbody>${rowsAdd}</tbody>
+            </table>` : ""}
+          ${skipped.length ? `
+            <div class="mt-4 mb-1 font-semibold text-gray-700">Skipped (${skipped.length})</div>
+            <table class="w-full text-xs border border-gray-200 rounded">
+              <thead class="bg-gray-50 text-gray-600 text-left">
+                <tr><th class="px-2 py-1">Zone</th><th class="px-2 py-1">Sensor type</th><th class="px-2 py-1" colspan="3">Reason</th></tr>
+              </thead>
+              <tbody>${rowsSkip}</tbody>
+            </table>` : ""}
+        `;
+        autoprovApplyBtn.disabled = toAdd.length === 0;
+      }
+
+      async function callAutoprov(dryRun) {
+        autoprovError.classList.add("hidden");
+        autoprovError.textContent = "";
+        const body = {
+          dry_run: dryRun,
+          overwrite: !!(autoprovOverwrite && autoprovOverwrite.checked),
+        };
+        const r = await fetch(
+          "/api/projects/" + encodeURIComponent(projectId) + "/devices/auto-provision",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          }
+        );
+        const payload = await r.json().catch(() => ({}));
+        if (!r.ok) {
+          autoprovError.classList.remove("hidden");
+          autoprovError.textContent = payload.detail || "Auto-provision failed";
+          return null;
+        }
+        return payload;
+      }
+
+      if (autoprovBtn) {
+        autoprovBtn.addEventListener("click", () => {
+          autoprovSummary.classList.add("hidden");
+          autoprovError.classList.add("hidden");
+          autoprovResult.innerHTML = "";
+          autoprovApplyBtn.disabled = true;
+          if (autoprovOverwrite) autoprovOverwrite.checked = false;
+          showModal("autoprov-modal");
+        });
+      }
+      if (autoprovPreviewBtn) {
+        autoprovPreviewBtn.addEventListener("click", async () => {
+          autoprovPreviewBtn.disabled = true;
+          try {
+            const payload = await callAutoprov(true);
+            if (payload) renderAutoprov(payload);
+          } finally {
+            autoprovPreviewBtn.disabled = false;
+          }
+        });
+      }
+      if (autoprovApplyBtn) {
+        autoprovApplyBtn.addEventListener("click", async () => {
+          autoprovApplyBtn.disabled = true;
+          try {
+            const payload = await callAutoprov(false);
+            if (payload && payload.config) {
+              hideModal("autoprov-modal");
+              applyConfigPayload(payload);
+            } else if (payload) {
+              renderAutoprov(payload);
+            }
+          } finally {
+            // re-enabled by renderAutoprov on next preview
+          }
+        });
+      }
+
+      // Load config when Devices tab first becomes active (or on initial page load).
+      let configLoaded = false;
+      function maybeLoadConfig() {
+        if (configLoaded) return;
+        configLoaded = true;
+        loadConfig().catch((err) => showCfgError(String(err)));
+      }
+      document.querySelectorAll('[data-tab="devices"]').forEach((btn) => {
+        btn.addEventListener("click", maybeLoadConfig);
+      });
+      // Also load eagerly so the meta badge is correct even if the user
+      // never clicks the Devices tab (Bridge Test / Live want to know).
+      maybeLoadConfig();
+
+      // ---- Raw YAML editor ----
+      const yamlEditor = document.getElementById("yaml-editor");
+      const yamlEditorError = document.getElementById("yaml-editor-error");
+      const yamlEditorOk = document.getElementById("yaml-editor-ok");
+      const yamlEditorReload = document.getElementById("yaml-editor-reload");
+      const yamlEditorSave = document.getElementById("yaml-editor-save");
+      const yamlEditorDirty = document.getElementById("yaml-editor-dirty");
+      const yamlEditorDetails = document.getElementById("yaml-editor-details");
+      let yamlLoaded = false;
+      let yamlBaseline = "";
+
+      function setYamlDirty(dirty) {
+        if (yamlEditorDirty) yamlEditorDirty.classList.toggle("hidden", !dirty);
+      }
+      function showYamlError(msg) {
+        yamlEditorOk.classList.add("hidden");
+        yamlEditorError.classList.remove("hidden");
+        yamlEditorError.textContent = msg;
+      }
+      function showYamlOk() {
+        yamlEditorError.classList.add("hidden");
+        yamlEditorOk.classList.remove("hidden");
+        setTimeout(() => yamlEditorOk.classList.add("hidden"), 2500);
+      }
+
+      async function loadYaml() {
+        yamlEditorError.classList.add("hidden");
+        yamlEditorOk.classList.add("hidden");
+        try {
+          const r = await fetch(`/api/projects/${projectId}/config/yaml`);
+          if (!r.ok) throw new Error(`HTTP ${r.status}`);
+          const text = await r.text();
+          yamlEditor.value = text;
+          yamlBaseline = text;
+          setYamlDirty(false);
+          yamlLoaded = true;
+        } catch (err) {
+          showYamlError("Could not load YAML: " + String(err));
+        }
+      }
+
+      if (yamlEditor) {
+        yamlEditor.addEventListener("input", () => {
+          setYamlDirty(yamlEditor.value !== yamlBaseline);
+        });
+        yamlEditorReload.addEventListener("click", () => {
+          if (yamlEditor.value !== yamlBaseline &&
+              !window.confirm("Discard unsaved YAML changes and reload from disk?")) return;
+          loadYaml();
+        });
+        yamlEditorSave.addEventListener("click", async () => {
+          yamlEditorSave.disabled = true;
+          yamlEditorError.classList.add("hidden");
+          yamlEditorOk.classList.add("hidden");
+          try {
+            const r = await fetch(`/api/projects/${projectId}/config/yaml`, {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ yaml: yamlEditor.value }),
+            });
+            const payload = await r.json().catch(() => ({}));
+            if (!r.ok) {
+              showYamlError(payload.detail || `Save failed (HTTP ${r.status})`);
+
+            }
+            // Server returns canonical YAML (post-load_config); re-sync editor.
+            if (typeof payload.yaml === "string") {
+              yamlEditor.value = payload.yaml;
+              yamlBaseline = payload.yaml;
+            } else {
+              yamlBaseline = yamlEditor.value;
+            }
+            setYamlDirty(false);
+            showYamlOk();
+            // Refresh structured panels.
+            applyConfigPayload({ config: payload.config, meta: payload.meta });
+          } catch (err) {
+            showYamlError(String(err));
+          } finally {
+            yamlEditorSave.disabled = false;
+          }
+        });
+        // Load on first expand (so a closed editor doesn't fetch).
+        yamlEditorDetails.addEventListener("toggle", () => {
+          if (yamlEditorDetails.open && !yamlLoaded) loadYaml();
+        });
+      }
+    })();
+  </script>
+{% endblock %}

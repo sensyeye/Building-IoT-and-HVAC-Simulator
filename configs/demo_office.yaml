@@ -1,0 +1,54 @@
+# Sensgreen Sensor Simulator — sample config: small demo office
+#
+# This file describes a fictitious 2-zone office used for demos.
+# It is consumed by `simulator.config_loader.load_config`.
+
+building:
+  id: bld-demo-office
+  name: "Sensgreen Demo Office"
+  timezone: "Europe/Istanbul"
+  zones:
+    - id: zone-open-space
+      name: "Open Space"
+      area_m2: 120.0
+      capacity: 25
+    - id: zone-meeting-a
+      name: "Meeting Room A"
+      area_m2: 18.0
+      capacity: 8
+
+devices:
+  - device_eui: "0011223344556677"
+    name: "IAQ Open Space"
+    type: iaq
+    zone_id: zone-open-space
+  - device_eui: "0011223344556678"
+    name: "IAQ Meeting A"
+    type: iaq
+    zone_id: zone-meeting-a
+  - device_eui: "0011223344556679"
+    name: "Energy Meter Main"
+    type: energy_meter
+    zone_id: zone-open-space
+  - device_eui: "001122334455667A"
+    name: "People Counter Entry"
+    type: people_counter
+    zone_id: zone-open-space
+
+outputs:
+  mqtt:
+    enabled: false
+    host: "broker.example.sensgreen.com"
+    port: 8883
+    client_id: "sensgreen-simulator-demo"
+    tls: true
+    topic_template: "sensgreen/{device_eui}"
+  csv:
+    enabled: true
+    output_dir: "outputs"
+    filename: "readings_long.csv"
+
+simulation:
+  mode: live
+  interval_seconds: 60
+  seed: 42

@@ -1,0 +1,47 @@
+# HVAC virtual point rules.
+metrics:
+  space_temperature:
+    physical_min: 5.0
+    physical_max: 50.0
+    max_step_per_minute: 0.5
+  return_air_temperature:
+    physical_min: 5.0
+    physical_max: 50.0
+  supply_air_temperature:
+    physical_min: 5.0
+    physical_max: 50.0
+  outside_air_temperature:
+    physical_min: -30.0
+    physical_max: 55.0
+  cooling_coil_valve_control:
+    physical_min: 0.0
+    physical_max: 100.0
+  damper_position:
+    physical_min: 0.0
+    physical_max: 100.0
+  fan_speed:
+    physical_min: 0.0
+    physical_max: 100.0
+  supply_fan_vfd_speed:
+    physical_min: 0.0
+    physical_max: 100.0
+  airflow:
+    physical_min: 0.0
+
+# Behavioural expectations.
+behaviour:
+  setpoint_tracking:
+    enabled: true
+    max_minutes_before_movement: 30
+    tolerance_c: 1.5
+    fault_scenario: hvac_inefficiency_fault
+  fan_airflow_consistency:
+    enabled: true
+    fan_high_threshold: 60
+    airflow_low_ratio: 0.30
+    fault_scenario: fresh_air_damper_stuck
+  ventilation_co2_link:
+    enabled: true
+    high_ventilation_threshold: 60
+    expected_co2_decay_per_minute: 5.0
+    fault_scenario: fresh_air_damper_stuck

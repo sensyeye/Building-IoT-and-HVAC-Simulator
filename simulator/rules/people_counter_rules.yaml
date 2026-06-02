@@ -1,0 +1,43 @@
+# Entry/exit people counter rules.
+metrics:
+  periodic_counter_in:
+    physical_min: 0
+  periodic_counter_out:
+    physical_min: 0
+  total_counter_in:
+    physical_min: 0
+    monotonic_non_decreasing: true
+    allow_decrease_with_scenario: meter_reset
+  total_counter_out:
+    physical_min: 0
+    monotonic_non_decreasing: true
+    allow_decrease_with_scenario: meter_reset
+
+# Estimated zone occupancy from counters: occ_t = max(0, occ_{t-1} + in - out)
+estimated_occupancy:
+  enabled: true
+  must_be_non_negative: true
+  drift_warning_threshold: 5      # vs occupancy sensor, after smoothing
+  drift_anomaly_scenario: counter_drift
+
+# Building-type expectations.
+building_profiles:
+  office:
+    morning_in_dominant: true
+    evening_out_dominant: true
+    weekend_traffic_ratio: 0.10
+  shopping_mall:
+    weekend_traffic_ratio: 1.5
+  hotel:
+    checkin_wave_hours: [14, 19]
+    checkout_wave_hours: [7, 12]
+  hospital:
+    distributed_traffic: true
+  school:
+    class_block_traffic: true
+  university:
+    class_block_traffic: true
+  restaurant:
+    meal_peak_traffic: true
+  factory:
+    shift_traffic: true

@@ -1,0 +1,16 @@
+# Runtime dependencies for the Sensgreen Sensor Simulator.
+# Kept minimal during scaffolding; expand as features are implemented.
+
+pyyaml>=6.0
+python-dotenv>=1.0
+paho-mqtt>=1.6
+
+# Web UI / API
+fastapi>=0.110
+uvicorn[standard]>=0.29
+jinja2>=3.1
+python-multipart>=0.0.9   # required by FastAPI for form-encoded POSTs
+
+# Dev / test (installed alongside runtime for simplicity during scaffolding)
+pytest>=8.0
+httpx>=0.27               # used by FastAPI's TestClient

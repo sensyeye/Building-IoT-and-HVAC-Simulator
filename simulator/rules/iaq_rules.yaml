@@ -1,0 +1,46 @@
+# IAQ physical and temporal rules.
+metrics:
+  temperature:
+    physical_min: 5.0      # hard impossibility limit
+    physical_max: 50.0
+    expected_min: 16.0     # comfort range
+    expected_max: 32.0
+    max_step_per_minute: 0.5
+  humidity:
+    physical_min: 0.0
+    physical_max: 100.0
+    expected_min: 20.0
+    expected_max: 85.0
+    max_step_per_minute: 5.0
+  co2:
+    physical_min: 350.0
+    physical_max: 2000.0   # hard ceiling for rare excursions
+    expected_min: 400.0
+    expected_max: 1500.0   # real indoor CO2 rarely exceeds this
+    outdoor_baseline: 420.0
+    max_step_per_minute: 250.0
+  voc:
+    physical_min: 0.0
+    physical_max: 25.0
+    max_step_per_minute: 2.0
+  pm25:
+    physical_min: 0.0
+    physical_max: 1000.0
+    expected_max: 150.0
+  pm10:
+    physical_min: 0.0
+    physical_max: 2000.0
+    expected_max: 300.0
+    must_be_ge: pm25       # PM10 ≥ PM2.5
+  pressure:
+    physical_min: 80000.0  # Pa, allows high altitude
+    physical_max: 110000.0
+    optional: true         # not all IAQ devices report pressure
+  battery:
+    physical_min: 1.5
+    physical_max: 4.5
+    monotonic_non_increasing: true
+    allow_increase_with_scenario: battery_replacement
+
+# Lag (minutes) before CO2 visibly responds to occupancy changes.
+co2_response_lag_minutes: [5, 10, 15, 20, 30]

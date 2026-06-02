@@ -1,0 +1,39 @@
+# Water and chilled water meter rules.
+domestic_water:
+  metrics:
+    flow_rate:
+      physical_min: 0.0
+    water_flow_reading:
+      physical_min: 0.0
+      monotonic_non_decreasing: true
+      allow_decrease_with_scenario: meter_reset
+  building_profiles:
+    office:        { night_base_ratio_max: 0.10 }
+    hotel:         { night_base_ratio_max: 0.40 }
+    hospital:      { night_base_ratio_max: 0.60 }
+    school:        { night_base_ratio_max: 0.05 }
+    restaurant:    { night_base_ratio_max: 0.10 }
+    shopping_mall: { night_base_ratio_max: 0.10 }
+    factory:       { night_base_ratio_max: 0.30 }
+
+chilled_water:
+  metrics:
+    AbsoluteWaterFlow:
+      physical_min: 0.0
+    cooling_energy:
+      physical_min: 0.0
+      monotonic_non_decreasing: true
+      allow_decrease_with_scenario: meter_reset
+    RemoteWaterTemperature: { physical_min: -5.0, physical_max: 30.0 }
+    FlowBodyWaterTemperature: { physical_min: -5.0, physical_max: 35.0 }
+    DifferentialWaterTemperature:
+      physical_min: -5.0
+      physical_max: 25.0
+      cooling_mode_supply_lt_return: true
+  correlations:
+    cooling_demand_drivers: [outdoor_temperature, occupancy, schedule_active]
+
+hierarchy:
+  residual_min: -0.10
+  residual_max:  0.20
+  window_minutes: 15

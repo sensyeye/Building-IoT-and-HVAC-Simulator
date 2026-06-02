@@ -1,0 +1,85 @@
+{
+  "simulation_id": "demo_office_2026_03_02",
+  "overall_score": 99.0,
+  "scores": {
+    "physical_validity": 100.0,
+    "temporal_consistency": 95.0,
+    "cross_sensor_correlation": 100.0,
+    "hierarchical_consistency": 100.0,
+    "scenario_consistency": 100.0,
+    "statistical_realism": 100.0,
+    "demo_usefulness": 95.0
+  },
+  "intended_anomalies_detected": [
+    {
+      "severity": "info",
+      "category": "scenario_consistency",
+      "entity_type": "scenario",
+      "entity_id": "meeting_room_poor_ventilation",
+      "message": "Scenario fingerprint detected: max CO2=1450 ppm.",
+      "start_timestamp": null,
+      "end_timestamp": null,
+      "suggested_fix": "",
+      "intended_anomaly": true
+    }
+  ],
+  "unintended_inconsistencies": [
+    {
+      "severity": "warning",
+      "category": "temporal_consistency",
+      "entity_type": "metric",
+      "entity_id": "iaq-1/co2",
+      "message": "co2 jumped 727.38 in 1.0 min (max_step_per_minute=250.0)",
+      "start_timestamp": "2026-03-02T08:19:00+00:00",
+      "end_timestamp": "2026-03-02T08:20:00+00:00",
+      "suggested_fix": "Smooth generator output; ensure first-order drift instead of independent random samples.",
+      "intended_anomaly": false
+    },
+    {
+      "severity": "warning",
+      "category": "demo_usefulness",
+      "entity_type": "building",
+      "entity_id": "<dataset>",
+      "message": "no device health metrics (RSSI/SNR/battery) \u2014 Alarm Engine demo will be thin",
+      "start_timestamp": null,
+      "end_timestamp": null,
+      "suggested_fix": "Emit periodic device_health readings, or enable a connectivity scenario.",
+      "intended_anomaly": false
+    }
+  ],
+  "findings": [
+    {
+      "severity": "warning",
+      "category": "temporal_consistency",
+      "entity_type": "metric",
+      "entity_id": "iaq-1/co2",
+      "message": "co2 jumped 727.38 in 1.0 min (max_step_per_minute=250.0)",
+      "start_timestamp": "2026-03-02T08:19:00+00:00",
+      "end_timestamp": "2026-03-02T08:20:00+00:00",
+      "suggested_fix": "Smooth generator output; ensure first-order drift instead of independent random samples.",
+      "intended_anomaly": false
+    },
+    {
+      "severity": "info",
+      "category": "scenario_consistency",
+      "entity_type": "scenario",
+      "entity_id": "meeting_room_poor_ventilation",
+      "message": "Scenario fingerprint detected: max CO2=1450 ppm.",
+      "start_timestamp": null,
+      "end_timestamp": null,
+      "suggested_fix": "",
+      "intended_anomaly": true
+    },
+    {
+      "severity": "warning",
+      "category": "demo_usefulness",
+      "entity_type": "building",
+      "entity_id": "<dataset>",
+      "message": "no device health metrics (RSSI/SNR/battery) \u2014 Alarm Engine demo will be thin",
+      "start_timestamp": null,
+      "end_timestamp": null,
+      "suggested_fix": "Emit periodic device_health readings, or enable a connectivity scenario.",
+      "intended_anomaly": false
+    }
+  ]
+}

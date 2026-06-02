@@ -1,0 +1,471 @@
+# Sensgreen Sensor Simulator — Realistic Mixed-Use Showcase
+# =========================================================
+#
+# A four-floor mixed-use building in Istanbul:
+#   - Floor 1: lobby with mall-style entrance counter
+#   - Floor 2: open-plan office + two meeting rooms
+#   - Floor 3: hotel-style guest rooms (3 of them)
+#   - Floor 4: server room + restaurant kitchen + warehouse storage
+#
+# Demonstrates every implemented sensor type:
+#   iaq, energy_meter, people_counter, entry_exit_counter,
+#   occupancy_sensor, door_contact, hvac
+#
+# Demonstrates device personalities (P10.2):
+#   normal, slightly_noisy, near_door, near_hvac_supply, near_window
+#
+# Demonstrates HVAC scheduling (P11.2):
+#   office hours (cool/heat), 24/7 server-room cooling, kitchen extract,
+#   hotel guest-room auto.
+#
+# Load with the API:
+#   POST a project, then PUT this file's contents (or use the UI to
+#   import it). For pure CLI runs use:
+#       python -m simulator dry-run-config --config configs/realistic_mixed_use.yaml
+#       python -m simulator generate-history --config configs/realistic_mixed_use.yaml \
+#           --start 2026-06-02T06:00:00Z --end 2026-06-02T23:00:00Z \
+#           --output-dir outputs/realistic_day
+#       python -m simulator run-live --config configs/realistic_mixed_use.yaml --dry-run --realtime
+
+building:
+  id: bld-realistic-mixed
+  name: "Sensgreen Realistic Mixed-Use Building"
+  timezone: "Europe/Istanbul"
+  zones:
+
+    # ─── Floor 1 — Lobby ────────────────────────────────────────────────
+    - id: f1-lobby
+      name: "Main Lobby"
+      area_m2: 180.0
+      capacity: 60
+      room_type: mall_entrance
+      metadata:
+        schedule_kind: open_office
+        business_hour_start: 7
+        business_hour_end: 22
+        weekend_factor: 0.6
+
+    # ─── Floor 2 — Office ───────────────────────────────────────────────
+    - id: f2-open-office
+      name: "Open Plan Office"
+      area_m2: 220.0
+      capacity: 40
+      room_type: open_office
+      metadata:
+        schedule_kind: open_office
+        business_hour_start: 8
+        business_hour_end: 19
+        weekend_factor: 0.05
+
+    - id: f2-meeting-a
+      name: "Meeting Room Alpha"
+      area_m2: 22.0
+      capacity: 10
+      room_type: meeting_room
+      metadata:
+        schedule_kind: meeting_room
+        business_hour_start: 9
+        business_hour_end: 18
+
+    - id: f2-meeting-b
+      name: "Meeting Room Beta"
+      area_m2: 14.0
+      capacity: 6
+      room_type: meeting_room
+      metadata:
+        schedule_kind: meeting_room
+        business_hour_start: 9
+        business_hour_end: 18
+
+    # ─── Floor 3 — Hotel guest rooms ────────────────────────────────────
+    - id: f3-guest-301
+      name: "Guest Room 301"
+      area_m2: 28.0
+      capacity: 2
+      room_type: hotel_guest_room
+      metadata: { schedule_kind: always_on }
+
+    - id: f3-guest-302
+      name: "Guest Room 302"
+      area_m2: 28.0
+      capacity: 2
+      room_type: hotel_guest_room
+      metadata: { schedule_kind: always_on }
+
+    - id: f3-guest-303
+      name: "Guest Suite 303"
+      area_m2: 42.0
+      capacity: 3
+      room_type: hotel_guest_room
+      metadata: { schedule_kind: always_on }
+
+    # ─── Floor 4 — Back-of-house ────────────────────────────────────────
+    - id: f4-server-room
+      name: "Server Room"
+      area_m2: 35.0
+      capacity: 2
+      room_type: server_room
+      metadata:
+        schedule_kind: empty
+        base_temperature_c: 19.0   # cold aisle target
+
+    - id: f4-kitchen
+      name: "Restaurant Kitchen"
+      area_m2: 60.0
+      capacity: 8
+      room_type: restaurant_kitchen
+      metadata:
+        schedule_kind: open_office
+        business_hour_start: 10
+        business_hour_end: 23
+
+    - id: f4-warehouse
+      name: "Warehouse Storage"
+      area_m2: 140.0
+      capacity: 5
+      room_type: warehouse_zone
+      metadata:
+        schedule_kind: open_office
+        business_hour_start: 8
+        business_hour_end: 17
+
+
+devices:
+
+  # ────────────────────────────────────────────────────────────────────
+  # Floor 1 — Lobby (high-traffic entrance)
+  # ────────────────────────────────────────────────────────────────────
+
+  - device_eui: "F1-LOBBY-IAQ-01"
+    name: "Lobby IAQ"
+    type: iaq
+    zone_id: f1-lobby
+    metadata:
+      interval_seconds: 60
+      personality: near_door   # exposed to outdoor drafts
+
+  - device_eui: "F1-LOBBY-COUNTER-01"
+    name: "Lobby Entry/Exit Counter"
+    type: entry_exit_counter
+    zone_id: f1-lobby
+    metadata:
+      interval_seconds: 60
+      report_net_occupancy: true
+
+  - device_eui: "F1-LOBBY-DOOR-01"
+    name: "Lobby Main Door"
+    type: door_contact
+    zone_id: f1-lobby
+    metadata:
+      interval_seconds: 60
+      base_open_rate_per_hour: 8.0   # busy main door
+      occupied_open_rate_per_hour: 0.5
+      open_duration_seconds_mean: 12.0
+      activity_peak_hour: 13.0
+      activity_width_hours: 7.0
+
+  - device_eui: "F1-LOBBY-ENERGY-01"
+    name: "Lobby Lighting Sub-meter"
+    type: energy_meter
+    zone_id: f1-lobby
+    metadata:
+      interval_seconds: 300
+      submeter: lighting
+
+  # ────────────────────────────────────────────────────────────────────
+  # Floor 2 — Open office (two IAQ sensors → see personality spread)
+  # ────────────────────────────────────────────────────────────────────
+
+  - device_eui: "F2-OFFICE-IAQ-01"
+    name: "Office IAQ (north window)"
+    type: iaq
+    zone_id: f2-open-office
+    metadata:
+      interval_seconds: 60
+      personality: near_window
+
+  - device_eui: "F2-OFFICE-IAQ-02"
+    name: "Office IAQ (under supply diffuser)"
+    type: iaq
+    zone_id: f2-open-office
+    metadata:
+      interval_seconds: 60
+      personality: near_hvac_supply
+
+  - device_eui: "F2-OFFICE-OCC-01"
+    name: "Office PIR (zone 1)"
+    type: occupancy_sensor
+    zone_id: f2-open-office
+    metadata:
+      interval_seconds: 30
+      hold_time_seconds: 300
+      report_count: true
+
+  - device_eui: "F2-OFFICE-HVAC-01"
+    name: "Office AHU"
+    type: hvac
+    zone_id: f2-open-office
+    metadata:
+      interval_seconds: 120
+      setpoint_c: 22.5
+      ventilation_l_s_per_person: 10.0
+      business_hour_start: 8
+      business_hour_end: 19
+
+  - device_eui: "F2-OFFICE-ENERGY-01"
+    name: "Office HVAC Sub-meter"
+    type: energy_meter
+    zone_id: f2-open-office
+    metadata:
+      interval_seconds: 300
+      submeter: hvac
+
+  - device_eui: "F2-OFFICE-ENERGY-02"
+    name: "Office Plug-load Sub-meter"
+    type: energy_meter
+    zone_id: f2-open-office
+    metadata:
+      interval_seconds: 300
+      submeter: plug
+
+  # ────────────────────────────────────────────────────────────────────
+  # Floor 2 — Meeting rooms (small, sharp CO₂ spikes)
+  # ────────────────────────────────────────────────────────────────────
+
+  - device_eui: "F2-MEET-A-IAQ-01"
+    name: "Meeting Alpha IAQ"
+    type: iaq
+    zone_id: f2-meeting-a
+    metadata: { interval_seconds: 60, personality: normal }
+
+  - device_eui: "F2-MEET-A-OCC-01"
+    name: "Meeting Alpha PIR"
+    type: occupancy_sensor
+    zone_id: f2-meeting-a
+    metadata: { interval_seconds: 30, hold_time_seconds: 180 }
+
+  - device_eui: "F2-MEET-A-DOOR-01"
+    name: "Meeting Alpha Door"
+    type: door_contact
+    zone_id: f2-meeting-a
+    metadata:
+      interval_seconds: 60
+      base_open_rate_per_hour: 0.3
+      occupied_open_rate_per_hour: 2.0   # people in/out during meetings
+
+  - device_eui: "F2-MEET-B-IAQ-01"
+    name: "Meeting Beta IAQ"
+    type: iaq
+    zone_id: f2-meeting-b
+    metadata: { interval_seconds: 60, personality: slightly_noisy }
+
+  - device_eui: "F2-MEET-B-OCC-01"
+    name: "Meeting Beta PIR"
+    type: occupancy_sensor
+    zone_id: f2-meeting-b
+    metadata: { interval_seconds: 30, hold_time_seconds: 180 }
+
+  # ────────────────────────────────────────────────────────────────────
+  # Floor 3 — Hotel guest rooms (each: IAQ + occupancy + door + HVAC)
+  # ────────────────────────────────────────────────────────────────────
+
+  - device_eui: "F3-GUEST-301-IAQ-01"
+    name: "Guest 301 IAQ"
+    type: iaq
+    zone_id: f3-guest-301
+    metadata: { interval_seconds: 120, personality: normal }
+  - device_eui: "F3-GUEST-301-OCC-01"
+    name: "Guest 301 PIR"
+    type: occupancy_sensor
+    zone_id: f3-guest-301
+    metadata: { interval_seconds: 30, hold_time_seconds: 600 }
+  - device_eui: "F3-GUEST-301-DOOR-01"
+    name: "Guest 301 Door"
+    type: door_contact
+    zone_id: f3-guest-301
+    metadata:
+      interval_seconds: 60
+      base_open_rate_per_hour: 0.1
+      occupied_open_rate_per_hour: 0.6
+  - device_eui: "F3-GUEST-301-HVAC-01"
+    name: "Guest 301 Fancoil"
+    type: hvac
+    zone_id: f3-guest-301
+    metadata:
+      interval_seconds: 300
+      setpoint_c: 23.0
+      ventilation_l_s_per_person: 7.5
+      business_hour_start: 0
+      business_hour_end: 24
+      run_weekends: true
+
+  - device_eui: "F3-GUEST-302-IAQ-01"
+    name: "Guest 302 IAQ"
+    type: iaq
+    zone_id: f3-guest-302
+    metadata: { interval_seconds: 120, personality: slightly_drifty }
+  - device_eui: "F3-GUEST-302-OCC-01"
+    name: "Guest 302 PIR"
+    type: occupancy_sensor
+    zone_id: f3-guest-302
+    metadata: { interval_seconds: 30, hold_time_seconds: 600 }
+  - device_eui: "F3-GUEST-302-DOOR-01"
+    name: "Guest 302 Door"
+    type: door_contact
+    zone_id: f3-guest-302
+    metadata: { interval_seconds: 60, base_open_rate_per_hour: 0.1, occupied_open_rate_per_hour: 0.6 }
+  - device_eui: "F3-GUEST-302-HVAC-01"
+    name: "Guest 302 Fancoil"
+    type: hvac
+    zone_id: f3-guest-302
+    metadata: { interval_seconds: 300, setpoint_c: 22.0, run_weekends: true, business_hour_start: 0, business_hour_end: 24 }
+
+  - device_eui: "F3-GUEST-303-IAQ-01"
+    name: "Guest Suite 303 IAQ"
+    type: iaq
+    zone_id: f3-guest-303
+    metadata: { interval_seconds: 120, personality: near_window }
+  - device_eui: "F3-GUEST-303-OCC-01"
+    name: "Guest Suite 303 PIR"
+    type: occupancy_sensor
+    zone_id: f3-guest-303
+    metadata: { interval_seconds: 30, hold_time_seconds: 600 }
+  - device_eui: "F3-GUEST-303-DOOR-01"
+    name: "Guest Suite 303 Door"
+    type: door_contact
+    zone_id: f3-guest-303
+    metadata: { interval_seconds: 60 }
+  - device_eui: "F3-GUEST-303-HVAC-01"
+    name: "Guest Suite 303 Fancoil"
+    type: hvac
+    zone_id: f3-guest-303
+    metadata: { interval_seconds: 300, setpoint_c: 21.5, run_weekends: true, business_hour_start: 0, business_hour_end: 24 }
+
+  # ────────────────────────────────────────────────────────────────────
+  # Floor 4 — Server room (24/7 cooling, tight tolerances)
+  # ────────────────────────────────────────────────────────────────────
+
+  - device_eui: "F4-SERVER-IAQ-01"
+    name: "Server Room IAQ"
+    type: iaq
+    zone_id: f4-server-room
+    metadata:
+      interval_seconds: 60
+      personality: near_hvac_supply
+      base_temperature_c: 19.0
+      base_humidity_pct: 45.0
+      humidity_min: 30.0
+      humidity_max: 60.0
+
+  - device_eui: "F4-SERVER-HVAC-01"
+    name: "Server Room CRAC"
+    type: hvac
+    zone_id: f4-server-room
+    metadata:
+      interval_seconds: 60
+      setpoint_c: 19.0
+      cool_threshold_c: 19.5     # cools aggressively
+      ventilation_l_s_per_person: 4.0
+      business_hour_start: 0
+      business_hour_end: 24
+      run_weekends: true
+      mode_override: cool        # force cooling 24/7
+
+  - device_eui: "F4-SERVER-DOOR-01"
+    name: "Server Room Door"
+    type: door_contact
+    zone_id: f4-server-room
+    metadata:
+      interval_seconds: 60
+      base_open_rate_per_hour: 0.05    # rarely opened
+      occupied_open_rate_per_hour: 0.5
+      open_duration_seconds_mean: 30.0
+
+  - device_eui: "F4-SERVER-ENERGY-01"
+    name: "Server Room Power"
+    type: energy_meter
+    zone_id: f4-server-room
+    metadata:
+      interval_seconds: 60
+      submeter: main
+
+  # ────────────────────────────────────────────────────────────────────
+  # Floor 4 — Restaurant kitchen (heavy VOC/PM source, ventilation max)
+  # ────────────────────────────────────────────────────────────────────
+
+  - device_eui: "F4-KITCHEN-IAQ-01"
+    name: "Kitchen IAQ"
+    type: iaq
+    zone_id: f4-kitchen
+    metadata:
+      interval_seconds: 60
+      personality: slightly_noisy
+      base_temperature_c: 26.0
+      humidity_max: 85.0
+
+  - device_eui: "F4-KITCHEN-HVAC-01"
+    name: "Kitchen Extract Fan"
+    type: hvac
+    zone_id: f4-kitchen
+    metadata:
+      interval_seconds: 120
+      setpoint_c: 24.0
+      ventilation_l_s_per_person: 25.0   # high extract rate
+      business_hour_start: 10
+      business_hour_end: 23
+      mode_override: fan_only
+
+  - device_eui: "F4-KITCHEN-DOOR-01"
+    name: "Kitchen Service Door"
+    type: door_contact
+    zone_id: f4-kitchen
+    metadata:
+      interval_seconds: 60
+      base_open_rate_per_hour: 1.0
+      occupied_open_rate_per_hour: 5.0   # lots of in/out
+      open_duration_seconds_mean: 8.0
+
+  # ────────────────────────────────────────────────────────────────────
+  # Floor 4 — Warehouse (low-density, simple)
+  # ────────────────────────────────────────────────────────────────────
+
+  - device_eui: "F4-WAREHOUSE-IAQ-01"
+    name: "Warehouse IAQ"
+    type: iaq
+    zone_id: f4-warehouse
+    metadata: { interval_seconds: 300, personality: normal }
+
+  - device_eui: "F4-WAREHOUSE-OCC-01"
+    name: "Warehouse PIR"
+    type: occupancy_sensor
+    zone_id: f4-warehouse
+    metadata: { interval_seconds: 60, hold_time_seconds: 600 }
+
+  - device_eui: "F4-WAREHOUSE-DOOR-01"
+    name: "Warehouse Loading Door"
+    type: door_contact
+    zone_id: f4-warehouse
+    metadata:
+      interval_seconds: 60
+      base_open_rate_per_hour: 0.3
+      occupied_open_rate_per_hour: 3.0
+      open_duration_seconds_mean: 60.0  # loading door stays open longer
+
+
+outputs:
+  mqtt:
+    enabled: false
+    host: "broker.example.sensgreen.com"
+    port: 8883
+    client_id: "sensgreen-simulator-realistic"
+    tls: true
+    topic_template: "sensgreen/{device_eui}"
+  csv:
+    enabled: true
+    output_dir: "outputs/realistic_mixed_use"
+    filename: "readings.csv"
+
+simulation:
+  mode: live
+  interval_seconds: 60
+  seed: 42

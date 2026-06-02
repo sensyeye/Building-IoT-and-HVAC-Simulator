@@ -1,0 +1,214 @@
+{
+  "_comment": "Building archetypes — preset templates used by the layout generator (P6). Each archetype declares the room mix (fractions, summing to ~1.0), default HVAC system options, and default monitoring intents. The simulator reads these read-only at startup; per-project overrides will land in a later phase.",
+  "archetypes": [
+    {
+      "id": "office",
+      "name": "Office Building",
+      "description": "Mixed open-plan and private offices with meeting rooms, lobby, and shared services.",
+      "default_business_hours": { "start": "08:00", "end": "18:00" },
+      "weekend_factor": 0.05,
+      "default_hvac_systems": ["fcu", "ahu_vav", "split_ac"],
+      "room_mix": {
+        "open_office": 0.40,
+        "meeting_room": 0.15,
+        "private_office": 0.10,
+        "lobby": 0.05,
+        "reception": 0.03,
+        "corridor": 0.12,
+        "kitchenette": 0.05,
+        "restroom": 0.05,
+        "phone_booth": 0.02,
+        "server_room": 0.03
+      },
+      "default_monitoring_intents": ["iaq", "occupancy", "hvac_operation"]
+    },
+    {
+      "id": "hotel",
+      "name": "Hotel",
+      "description": "Guest rooms dominate; common areas, restaurant, and back-of-house.",
+      "default_business_hours": { "start": "00:00", "end": "23:59" },
+      "weekend_factor": 1.0,
+      "default_hvac_systems": ["fcu", "vrf", "chilled_water_ahu_fcu"],
+      "room_mix": {
+        "hotel_guest_room": 0.65,
+        "hotel_corridor": 0.15,
+        "lobby": 0.05,
+        "restaurant_dining": 0.05,
+        "restaurant_kitchen": 0.03,
+        "mechanical_room": 0.04,
+        "restroom": 0.03
+      },
+      "default_monitoring_intents": ["iaq", "occupancy", "guest_room_automation"]
+    },
+    {
+      "id": "shopping_mall",
+      "name": "Shopping Mall",
+      "description": "Retail units, food court, common corridors, and parking.",
+      "default_business_hours": { "start": "10:00", "end": "22:00" },
+      "weekend_factor": 1.2,
+      "default_hvac_systems": ["ahu_vav", "chilled_water_ahu_fcu"],
+      "room_mix": {
+        "retail_floor": 0.40,
+        "corridor": 0.20,
+        "food_court": 0.10,
+        "mall_entrance": 0.05,
+        "restroom": 0.05,
+        "parking_area": 0.15,
+        "mechanical_room": 0.05
+      },
+      "default_monitoring_intents": ["iaq", "people_flow", "energy"]
+    },
+    {
+      "id": "school",
+      "name": "School",
+      "description": "Classrooms, labs, cafeteria, and gym.",
+      "default_business_hours": { "start": "08:00", "end": "16:00" },
+      "weekend_factor": 0.02,
+      "default_hvac_systems": ["fcu", "ahu_vav"],
+      "room_mix": {
+        "classroom": 0.50,
+        "lab": 0.05,
+        "lecture_hall": 0.05,
+        "corridor": 0.20,
+        "restroom": 0.05,
+        "gym_floor": 0.05,
+        "waiting_area": 0.05,
+        "mechanical_room": 0.05
+      },
+      "default_monitoring_intents": ["iaq", "occupancy", "compliance"]
+    },
+    {
+      "id": "hospital",
+      "name": "Hospital",
+      "description": "Patient rooms, waiting areas, labs, and back-of-house.",
+      "default_business_hours": { "start": "00:00", "end": "23:59" },
+      "weekend_factor": 1.0,
+      "default_hvac_systems": ["chilled_water_ahu_fcu", "ahu_vav"],
+      "room_mix": {
+        "patient_room": 0.40,
+        "waiting_area": 0.10,
+        "corridor": 0.20,
+        "lab": 0.05,
+        "restroom": 0.05,
+        "private_office": 0.05,
+        "storage_room": 0.05,
+        "mechanical_room": 0.10
+      },
+      "default_monitoring_intents": ["iaq", "compliance", "hvac_operation"]
+    },
+    {
+      "id": "residential",
+      "name": "Residential",
+      "description": "Apartments with shared circulation.",
+      "default_business_hours": { "start": "00:00", "end": "23:59" },
+      "weekend_factor": 1.0,
+      "default_hvac_systems": ["split_ac", "vrf", "radiator_heating"],
+      "room_mix": {
+        "apartment_living": 0.35,
+        "apartment_bedroom": 0.35,
+        "kitchenette": 0.10,
+        "restroom": 0.10,
+        "corridor": 0.10
+      },
+      "default_monitoring_intents": ["comfort", "iaq"]
+    },
+    {
+      "id": "retail",
+      "name": "Retail",
+      "description": "Single-tenant retail floor with stockroom and fitting areas.",
+      "default_business_hours": { "start": "10:00", "end": "22:00" },
+      "weekend_factor": 1.2,
+      "default_hvac_systems": ["split_ac", "ahu_only"],
+      "room_mix": {
+        "retail_floor": 0.65,
+        "fitting_room": 0.10,
+        "storage_room": 0.15,
+        "restroom": 0.05,
+        "mechanical_room": 0.05
+      },
+      "default_monitoring_intents": ["iaq", "people_flow", "energy"]
+    },
+    {
+      "id": "warehouse",
+      "name": "Warehouse",
+      "description": "Bulk storage with loading bays and a small office area.",
+      "default_business_hours": { "start": "06:00", "end": "20:00" },
+      "weekend_factor": 0.20,
+      "default_hvac_systems": ["natural_ventilation", "ahu_only"],
+      "room_mix": {
+        "warehouse_zone": 0.60,
+        "storage_room": 0.15,
+        "cold_room": 0.05,
+        "open_office": 0.10,
+        "restroom": 0.05,
+        "mechanical_room": 0.05
+      },
+      "default_monitoring_intents": ["comfort", "energy"]
+    },
+    {
+      "id": "datacenter",
+      "name": "Data Center",
+      "description": "Server halls and supporting plant rooms.",
+      "default_business_hours": { "start": "00:00", "end": "23:59" },
+      "weekend_factor": 1.0,
+      "default_hvac_systems": ["datacenter_crac", "chilled_water_ahu_fcu"],
+      "room_mix": {
+        "server_room": 0.75,
+        "mechanical_room": 0.15,
+        "corridor": 0.05,
+        "open_office": 0.05
+      },
+      "default_monitoring_intents": ["hvac_operation", "energy", "compliance"]
+    },
+    {
+      "id": "restaurant",
+      "name": "Restaurant",
+      "description": "Front-of-house dining with back-of-house kitchen and storage.",
+      "default_business_hours": { "start": "11:00", "end": "23:00" },
+      "weekend_factor": 1.3,
+      "default_hvac_systems": ["ahu_only", "split_ac"],
+      "room_mix": {
+        "restaurant_dining": 0.55,
+        "restaurant_kitchen": 0.25,
+        "storage_room": 0.10,
+        "restroom": 0.05,
+        "mechanical_room": 0.05
+      },
+      "default_monitoring_intents": ["iaq", "energy", "hvac_operation"]
+    },
+    {
+      "id": "gym",
+      "name": "Gym",
+      "description": "Open gym floor, changing rooms, and reception.",
+      "default_business_hours": { "start": "06:00", "end": "23:00" },
+      "weekend_factor": 0.9,
+      "default_hvac_systems": ["ahu_vav", "split_ac"],
+      "room_mix": {
+        "gym_floor": 0.65,
+        "fitting_room": 0.10,
+        "restroom": 0.10,
+        "reception": 0.05,
+        "storage_room": 0.05,
+        "mechanical_room": 0.05
+      },
+      "default_monitoring_intents": ["iaq", "occupancy", "comfort"]
+    },
+    {
+      "id": "laboratory",
+      "name": "Laboratory",
+      "description": "Wet/dry labs with controlled environments and offices.",
+      "default_business_hours": { "start": "07:00", "end": "20:00" },
+      "weekend_factor": 0.15,
+      "default_hvac_systems": ["ahu_vav", "chilled_water_ahu_fcu"],
+      "room_mix": {
+        "lab": 0.55,
+        "storage_room": 0.10,
+        "private_office": 0.15,
+        "corridor": 0.10,
+        "restroom": 0.05,
+        "mechanical_room": 0.05
+      },
+      "default_monitoring_intents": ["iaq", "compliance", "hvac_operation"]
+    }
+  ]
+}

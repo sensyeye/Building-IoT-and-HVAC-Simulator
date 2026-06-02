@@ -1,0 +1,95 @@
+{% extends "layout.html" %}
+
+{% block title %}Dashboard · {{ app_name }}{% endblock %}
+{% block header_title %}Dashboard{% endblock %}
+
+{% block content %}
+  <div class="flex items-center justify-between mb-6">
+    <div>
+      <h2 class="text-2xl font-semibold text-gray-900">Projects</h2>
+      <p class="text-sm text-gray-500 mt-1">
+        Configure, generate, validate, and publish simulated sensor data.
+      </p>
+    </div>
+    <a href="/projects/new"
+       class="inline-flex items-center gap-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 shadow-sm">
+      + New Project
+    </a>
+  </div>
+
+  {% if projects %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+      {% for p in projects %}
+        <a href="/projects/{{ p.id }}"
+           class="block rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md hover:border-gray-300 transition p-5">
+          <div class="flex items-start justify-between">
+            <div class="min-w-0">
+              <h3 class="text-lg font-semibold text-gray-900 truncate">{{ p.name }}</h3>
+              <p class="text-xs text-gray-500 mt-0.5">{{ p.building_type }} · {{ p.city or "—" }}</p>
+            </div>
+            {# Validation score badge #}
+            {% if p.last_validation_score is not none %}
+              {% set score = p.last_validation_score %}
+              {% if score >= 90 %}
+                {% set vcls = "bg-green-100 text-green-800" %}
+              {% elif score >= 70 %}
+                {% set vcls = "bg-yellow-100 text-yellow-800" %}
+              {% else %}
+                {% set vcls = "bg-red-100 text-red-800" %}
+              {% endif %}
+              <span class="inline-flex items-center rounded-full text-xs font-medium px-2.5 py-1 {{ vcls }}">
+                {{ "%.1f"|format(score) }}
+              </span>
+            {% else %}
+              <span class="inline-flex items-center rounded-full bg-gray-100 text-gray-600 text-xs font-medium px-2.5 py-1">
+                no validation
+              </span>
+            {% endif %}
+          </div>
+
+          <dl class="mt-4 grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <dt class="text-xs text-gray-500">Area</dt>
+              <dd class="font-medium text-gray-900">{{ "%.0f"|format(p.area_m2) }} m²</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-gray-500">Devices</dt>
+              <dd class="font-medium text-gray-900">{{ p.device_count }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-gray-500">Floors</dt>
+              <dd class="font-medium text-gray-900">{{ p.floors }}</dd>
+            </div>
+            <div>
+              <dt class="text-xs text-gray-500">Last run</dt>
+              <dd>
+                {% set s = p.last_run_status %}
+                {% if s == "succeeded" %}
+                  <span class="inline-flex items-center rounded-full bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5">succeeded</span>
+                {% elif s == "running" %}
+                  <span class="inline-flex items-center rounded-full bg-blue-100 text-blue-800 text-xs font-medium px-2 py-0.5">running</span>
+                {% elif s == "failed" %}
+                  <span class="inline-flex items-center rounded-full bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5">failed</span>
+                {% else %}
+                  <span class="inline-flex items-center rounded-full bg-gray-100 text-gray-600 text-xs font-medium px-2 py-0.5">never</span>
+                {% endif %}
+              </dd>
+            </div>
+          </dl>
+        </a>
+      {% endfor %}
+    </div>
+  {% else %}
+    <div class="rounded-2xl border border-dashed border-gray-300 bg-white p-10 text-center">
+      <h3 class="text-base font-semibold text-gray-800">No projects yet</h3>
+      <p class="text-sm text-gray-500 mt-1 max-w-md mx-auto">
+        Create your first project to configure a building, generate historical data,
+        and run validation.
+      </p>
+      <a href="/projects/new"
+         class="inline-flex items-center gap-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 mt-5">
+        + Create Project
+      </a>
+    </div>
+  {% endif %}
+{% endblock %}

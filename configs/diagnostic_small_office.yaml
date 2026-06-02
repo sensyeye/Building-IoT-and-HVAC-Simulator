@@ -1,0 +1,254 @@
+# Sensgreen Sensor Simulator — diagnostic config
+# ------------------------------------------------
+# Small, fast-running configuration intended for debugging:
+#   * 24-hour window (Mon 08:00 → Tue 08:00 Europe/Rome)
+#   * 4 zones, 11 devices, mix of supported + planned sensor types
+#   * Deterministic seed
+#
+# Run with:
+#   python -m simulator.main generate-history \
+#     --config configs/diagnostic_small_office.yaml \
+#     --output-dir outputs/diagnostic \
+#     --simulation-id diag_small_office \
+#     --scenario meeting_room_poor_ventilation \
+#     --scenario after_hours_energy_waste \
+#     --scenario cleaning_voc_spike
+#
+# Notes
+# -----
+# * Fields not yet consumed by `simulator.config_loader` (building_type,
+#   location, gross_area_m2, floors, scenarios) are kept for
+#   documentation and to drive forthcoming scenario engine work — the
+#   current loader ignores unknown top-level keys, so nothing breaks.
+# * Devices whose `type` has no implementation yet (occupancy_sensor,
+#   hvac) are skipped automatically by `SimulationService`.
+
+building:
+  id: bld-diagnostic-small-office
+  name: "Diagnostic Small Office"
+  timezone: "Europe/Rome"
+  # Documentation-only fields (loader ignores; useful for later features):
+  building_type: office
+  location: Milan
+  gross_area_m2: 1200
+  floors: 2
+
+  zones:
+    - id: zone-lobby
+      name: "Lobby"
+      area_m2: 120.0
+      capacity: 30
+      metadata:
+        type: lobby
+        schedule_kind: open_office
+        business_hour_start: 7
+        business_hour_end: 20
+
+    - id: zone-open-office
+      name: "Open Office"
+      area_m2: 500.0
+      capacity: 55
+      metadata:
+        type: open_office
+        schedule_kind: open_office
+        business_hour_start: 8
+        business_hour_end: 18
+
+    - id: zone-meeting-a
+      name: "Meeting Room A"
+      area_m2: 35.0
+      capacity: 12
+      metadata:
+        type: meeting_room
+        schedule_kind: meeting_room
+
+    - id: zone-cafeteria
+      name: "Cafeteria"
+      area_m2: 120.0
+      capacity: 35
+      metadata:
+        type: cafeteria
+        schedule_kind: open_office
+        business_hour_start: 11
+        business_hour_end: 15
+
+devices:
+  # ---------- IAQ (one per zone) ----------
+  - device_eui: "AA00000000000001"
+    name: "IAQ Lobby"
+    type: iaq
+    zone_id: zone-lobby
+    metadata:
+      interval_seconds: 60
+      base_temperature_c: 22.0
+      base_humidity_pct: 50.0
+
+  - device_eui: "AA00000000000002"
+    name: "IAQ Open Office"
+    type: iaq
+    zone_id: zone-open-office
+    metadata:
+      interval_seconds: 60
+      base_temperature_c: 22.5
+      base_humidity_pct: 48.0
+
+  - device_eui: "AA00000000000003"
+    name: "IAQ Meeting Room A"
+    type: iaq
+    zone_id: zone-meeting-a
+    metadata:
+      interval_seconds: 60
+      base_temperature_c: 22.0
+      base_humidity_pct: 50.0
+
+  - device_eui: "AA00000000000004"
+    name: "IAQ Cafeteria"
+    type: iaq
+    zone_id: zone-cafeteria
+    metadata:
+      interval_seconds: 60
+      base_temperature_c: 23.0
+      base_humidity_pct: 55.0
+
+  # ---------- Occupancy sensors (planned; skipped today) ----------
+  - device_eui: "BB00000000000001"
+    name: "Occupancy Open Office"
+    type: occupancy_sensor
+    zone_id: zone-open-office
+    metadata:
+      interval_seconds: 60
+
+  - device_eui: "BB00000000000002"
+    name: "Occupancy Meeting Room A"
+    type: occupancy_sensor
+    zone_id: zone-meeting-a
+    metadata:
+      interval_seconds: 60
+
+  # ---------- People counter ----------
+  - device_eui: "CC00000000000001"
+    name: "Lobby Entry/Exit Counter"
+    type: entry_exit_counter
+    zone_id: zone-lobby
+    metadata:
+      interval_seconds: 60
+      peak_flow_per_min: 1.5
+      morning_peak_hour: 9.0
+      evening_peak_hour: 18.0
+
+  # ---------- Energy meters ----------
+  - device_eui: "DD00000000000001"
+    name: "Main Energy Meter"
+    type: energy_meter
+    zone_id: zone-lobby           # building-level proxy — sits at the entry
+    metadata:
+      interval_seconds: 300
+      submeter: main
+      nominal_kw: 80.0
+      voltage_nominal: 230.0
+      frequency_nominal: 50.0
+      base_load_factor: 0.10
+
+  - device_eui: "DD00000000000002"
+    name: "HVAC Energy Meter"
+    type: energy_meter
+    zone_id: zone-open-office
+    metadata:
+      interval_seconds: 300
+      submeter: hvac
+      nominal_kw: 35.0
+      base_load_factor: 0.05
+
+  - device_eui: "DD00000000000003"
+    name: "Lighting Energy Meter"
+    type: energy_meter
+    zone_id: zone-open-office
+    metadata:
+      interval_seconds: 300
+      submeter: lighting
+      nominal_kw: 15.0
+      base_load_factor: 0.02
+
+  - device_eui: "DD00000000000004"
+    name: "Plug Load Energy Meter"
+    type: energy_meter
+    zone_id: zone-open-office
+    metadata:
+      interval_seconds: 300
+      submeter: plug
+      nominal_kw: 20.0
+      base_load_factor: 0.05
+
+  # ---------- HVAC virtual points (planned; skipped today) ----------
+  - device_eui: "EE00000000000001"
+    name: "HVAC VP Meeting Room A"
+    type: hvac
+    zone_id: zone-meeting-a
+    metadata:
+      interval_seconds: 300
+      setpoint_c: 22.0
+
+  - device_eui: "EE00000000000002"
+    name: "HVAC VP Open Office"
+    type: hvac
+    zone_id: zone-open-office
+    metadata:
+      interval_seconds: 300
+      setpoint_c: 22.0
+
+# ---------- Outputs ----------
+outputs:
+  mqtt:
+    enabled: false
+    host: "broker.example.sensgreen.com"
+    port: 8883
+    client_id: "sensgreen-simulator-diagnostic"
+    tls: true
+    topic_template: "sensgreen/{device_eui}"
+  csv:
+    enabled: true
+    output_dir: "outputs/diagnostic"
+    filename: "readings_long.csv"
+
+# ---------- Simulation window ----------
+# Mon 2026-04-27 08:00 → Tue 2026-04-28 08:00 (Europe/Rome).
+# Covers the Monday meeting-room and after-hours scenarios plus the
+# Tuesday early-morning cleaning spike. 24 h with mixed cadences keeps
+# total readings small (≈8k) for fast debugging.
+simulation:
+  mode: historical
+  interval_seconds: 60        # global default; overridden per-device above
+  start: "2026-04-27T08:00:00+02:00"
+  end:   "2026-04-28T08:00:00+02:00"
+  seed: 42
+
+# ---------- Scenarios (documentation; activate via --scenario) ----------
+# The loader ignores this section today; the validator treats each entry
+# in --scenario as an active scenario name. The `expected_*` fields
+# document the fingerprint each scenario should produce.
+scenarios:
+  - id: meeting_room_poor_ventilation
+    target_zone: zone-meeting-a
+    weekday: monday
+    start: "10:00"
+    end:   "12:00"
+    expected:
+      co2_max_ppm_above: 1200
+
+  - id: after_hours_energy_waste
+    target_zone: zone-open-office
+    weekday: monday
+    start: "20:00"
+    end:   "23:00"
+    expected:
+      lighting_or_hvac_active_power_kw_above: 4.0
+      occupancy_below: 5
+
+  - id: cleaning_voc_spike
+    target_zone: zone-cafeteria
+    weekday: tuesday
+    start: "06:00"
+    end:   "07:00"
+    expected:
+      voc_mg_m3_above: 1.2
+      co2_max_ppm_below: 700

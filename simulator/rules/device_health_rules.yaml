@@ -1,0 +1,23 @@
+# Device health + gateway rules.
+metrics:
+  rssi:
+    physical_min: -130.0
+    physical_max: -30.0
+    expected_min: -110.0
+  snr:
+    physical_min: -25.0
+    physical_max: 15.0
+  battery:
+    physical_min: 1.5
+    physical_max: 4.5
+    monotonic_non_increasing: true
+    allow_increase_with_scenario: battery_replacement
+
+offline_detection:
+  expected_interval_multiplier: 3   # missed > 3 intervals → considered offline
+  isolated_device_max_simultaneous: 1  # more than this → likely gateway outage
+
+gateway_outage:
+  scenario: gateway_outage
+  min_devices_affected: 2
+  message: "Multiple devices on the same gateway went silent simultaneously."

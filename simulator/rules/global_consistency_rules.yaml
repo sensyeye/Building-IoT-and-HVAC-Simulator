@@ -1,0 +1,54 @@
+# Global consistency rules for the Sensgreen Sensor Simulator.
+#
+# These thresholds drive the validators (physical, temporal, correlation,
+# hierarchy, scenario, statistical, demo-quality). All values can be
+# overridden per scenario or per building config — keep code free of
+# hardcoded magic numbers; tweak them here.
+
+# Scoring weights (must sum to ~1.0)
+scoring_weights:
+  physical_validity:        0.20
+  temporal_consistency:     0.15
+  cross_sensor_correlation: 0.25
+  hierarchical_consistency: 0.15
+  scenario_consistency:     0.15
+  statistical_realism:      0.05
+  demo_usefulness:          0.05
+
+severity_penalties:
+  critical: 25   # points off the affected category
+  warning:  5
+  info:     0
+
+# Categories of intentional anomalies — findings tagged with one of
+# these scenario_ids will be reported as "intended_anomalies_detected"
+# instead of "unintended_inconsistencies".
+intended_anomaly_scenarios:
+  - meeting_room_poor_ventilation
+  - after_hours_energy_waste
+  - hvac_inefficiency_fault
+  - fresh_air_damper_stuck
+  - cleaning_voc_spike
+  - outdoor_pm_event
+  - high_occupancy_lobby_event
+  - gateway_outage
+  - single_sensor_offline
+  - counter_drift
+  - meter_reset
+  - overcrowding
+
+# Default sampling cadence (used when timestamps are sparse).
+default_interval_seconds: 60
+
+# Lag windows (minutes) for cross-sensor correlation checks.
+correlation_lags_minutes:
+  occupancy_to_co2:        [5, 10, 15, 20, 30]
+  outdoor_temp_to_hvac:    [15, 30, 60]
+  people_counter_to_zone:  [0, 1, 2, 3, 4, 5]
+  ventilation_to_co2:      [5, 10, 15, 20, 30]
+
+# Minimum Pearson correlation considered "expected" for strong links.
+correlation_thresholds:
+  strong:  0.55
+  medium:  0.30
+  weak:    0.10

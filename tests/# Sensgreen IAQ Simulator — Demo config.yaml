@@ -1,0 +1,326 @@
+# Sensgreen IAQ Simulator — Demo config
+# Ankara Office HQ · 500 m² across 2 floors · 8 zones · 18 devices
+# Wires every room to a monitoring profile + HVAC zone so scenario
+# targeting and the GET /config annotations all light up.
+
+building:
+  id: bld-ankara-office-500
+  name: "Ankara Office HQ"
+  timezone: "Europe/Istanbul"
+  building_type: office
+  metadata:
+    city: Ankara
+    total_area_m2: 500
+    floors: 2
+
+  # ---------------------------------------------------------------------
+  # HVAC zones
+  # ---------------------------------------------------------------------
+  hvac_zones:
+    - id: AHU-North
+      name: "AHU North (open office + meeting wing)"
+      system_type: ahu
+      system_id: ahu-01
+      setpoint_c: 22.0
+      capacity_kw: 35.0
+      metadata: { stages: 3, heat_recovery: true }
+
+    - id: VRF-South
+      name: "VRF South (private offices + lounges)"
+      system_type: vrf
+      system_id: vrf-01
+      setpoint_c: 23.0
+      capacity_kw: 18.0
+
+    - id: FCU-Common
+      name: "FCU Common (lobby + restrooms)"
+      system_type: fcu
+      system_id: fcu-01
+      setpoint_c: 21.5
+      capacity_kw: 8.0
+
+  # ---------------------------------------------------------------------
+  # Rooms / zones (8 zones × ~62.5 m² avg = 500 m²)
+  # ---------------------------------------------------------------------
+  zones:
+    # ---- Floor 1 ----
+    - id: lobby-f1
+      name: "Lobby"
+      area_m2: 70
+      capacity: 25
+      floor_id: f1
+      room_type: lobby
+      monitoring_profile: iaq_standard
+      hvac_zone_id: FCU-Common
+      exposure: south
+      ventilation_quality: good
+      infiltration_level: high
+
+    - id: open-office-f1
+      name: "Open Office F1"
+      area_m2: 120
+      capacity: 30
+      floor_id: f1
+      room_type: open_office
+      monitoring_profile: iaq_occupancy
+      hvac_zone_id: AHU-North
+      exposure: north
+      ventilation_quality: good
+      infiltration_level: low
+
+    - id: meeting-room-f1-01
+      name: "Meeting Room F1-01 (Ankara)"
+      area_m2: 25
+      capacity: 8
+      floor_id: f1
+      room_type: meeting_room
+      monitoring_profile: iaq_occupancy
+      hvac_zone_id: AHU-North
+      exposure: interior
+      ventilation_quality: average
+
+    - id: kitchenette-f1
+      name: "Kitchenette F1"
+      area_m2: 18
+      capacity: 6
+      floor_id: f1
+      room_type: kitchenette
+      monitoring_profile: iaq_standard
+      hvac_zone_id: FCU-Common
+      ventilation_quality: average
+      infiltration_level: medium
+
+    # ---- Floor 2 ----
+    - id: open-office-f2
+      name: "Open Office F2"
+      area_m2: 110
+      capacity: 28
+      floor_id: f2
+      room_type: open_office
+      monitoring_profile: iaq_occupancy
+      hvac_zone_id: AHU-North
+      exposure: south
+      ventilation_quality: good
+
+    - id: private-office-f2-01
+      name: "CEO Office"
+      area_m2: 22
+      capacity: 2
+      floor_id: f2
+      room_type: private_office
+      monitoring_profile: iaq_standard
+      hvac_zone_id: VRF-South
+      exposure: south
+      ventilation_quality: good
+      infiltration_level: low
+
+    - id: meeting-room-f2-01
+      name: "Boardroom F2"
+      area_m2: 30
+      capacity: 12
+      floor_id: f2
+      room_type: meeting_room
+      monitoring_profile: iaq_occupancy
+      hvac_zone_id: VRF-South
+      ventilation_quality: good
+
+    - id: server-room-f2
+      name: "Server Room"
+      area_m2: 12
+      capacity: 0
+      floor_id: f2
+      room_type: server_room
+      monitoring_profile: hvac_operational
+      hvac_zone_id: VRF-South
+      exposure: interior
+      ventilation_quality: poor
+      infiltration_level: low
+      metadata: { criticality: high }
+
+# ---------------------------------------------------------------------------
+# Devices (18 total)
+#   IAQ              × 8  (one per zone)
+#   Entry/exit       × 4  (lobby + 2 meeting rooms + open office F1)
+#   Energy meters    × 5  (main + HVAC + lighting + plug + server)
+#   HVAC virtual pt  × 1  (server room — high-criticality)
+# ---------------------------------------------------------------------------
+devices:
+  # ---- IAQ (one per zone) ----
+  - device_eui: fe0a000000000001
+    name: "Lobby IAQ"
+    type: iaq
+    zone_id: lobby-f1
+    metadata:
+      interval_seconds: 60
+      base_temperature_c: 22.5
+      base_humidity_pct: 45
+
+  - device_eui: fe0a000000000002
+    name: "Open Office F1 IAQ"
+    type: iaq
+    zone_id: open-office-f1
+    metadata:
+      interval_seconds: 60
+      base_temperature_c: 22.0
+      base_humidity_pct: 48
+
+  - device_eui: fe0a000000000003
+    name: "Meeting F1-01 IAQ"
+    type: iaq
+    zone_id: meeting-room-f1-01
+    metadata:
+      interval_seconds: 30
+      base_temperature_c: 22.0
+      base_humidity_pct: 50
+
+  - device_eui: fe0a000000000004
+    name: "Kitchenette IAQ"
+    type: iaq
+    zone_id: kitchenette-f1
+    metadata:
+      interval_seconds: 60
+      base_temperature_c: 23.0
+      base_humidity_pct: 55
+
+  - device_eui: fe0a000000000005
+    name: "Open Office F2 IAQ"
+    type: iaq
+    zone_id: open-office-f2
+    metadata: { interval_seconds: 60 }
+
+  - device_eui: fe0a000000000006
+    name: "CEO Office IAQ"
+    type: iaq
+    zone_id: private-office-f2-01
+    metadata: { interval_seconds: 60 }
+
+  - device_eui: fe0a000000000007
+    name: "Boardroom IAQ"
+    type: iaq
+    zone_id: meeting-room-f2-01
+    metadata: { interval_seconds: 30 }
+
+  - device_eui: fe0a000000000008
+    name: "Server Room IAQ"
+    type: iaq
+    zone_id: server-room-f2
+    metadata:
+      interval_seconds: 30
+      base_temperature_c: 19.0
+      base_humidity_pct: 40
+
+  # ---- People counters ----
+  - device_eui: fe0b000000000001
+    name: "Lobby Entry Counter"
+    type: entry_exit_counter
+    zone_id: lobby-f1
+    metadata:
+      interval_seconds: 60
+      peak_flow_per_min: 2.0
+      morning_peak_hour: 9.0
+      evening_peak_hour: 18.0
+
+  - device_eui: fe0b000000000002
+    name: "Open Office F1 Counter"
+    type: entry_exit_counter
+    zone_id: open-office-f1
+    metadata:
+      interval_seconds: 60
+      peak_flow_per_min: 1.2
+      morning_peak_hour: 9.0
+      evening_peak_hour: 18.0
+
+  - device_eui: fe0b000000000003
+    name: "Meeting F1-01 Counter"
+    type: entry_exit_counter
+    zone_id: meeting-room-f1-01
+    metadata:
+      interval_seconds: 30
+      peak_flow_per_min: 0.5
+
+  - device_eui: fe0b000000000004
+    name: "Boardroom Counter"
+    type: entry_exit_counter
+    zone_id: meeting-room-f2-01
+    metadata:
+      interval_seconds: 30
+      peak_flow_per_min: 0.7
+
+  # ---- Energy meters ----
+  - device_eui: fe0c000000000001
+    name: "Main Building Meter"
+    type: energy_meter
+    zone_id: lobby-f1
+    metadata:
+      interval_seconds: 300
+      submeter: main
+      nominal_kw: 80.0
+      base_load_factor: 0.10
+      voltage_nominal: 230
+      frequency_nominal: 50
+
+  - device_eui: fe0c000000000002
+    name: "HVAC Sub-meter"
+    type: energy_meter
+    zone_id: open-office-f1
+    metadata:
+      interval_seconds: 300
+      submeter: hvac
+      nominal_kw: 45.0
+      base_load_factor: 0.08
+
+  - device_eui: fe0c000000000003
+    name: "Lighting Sub-meter"
+    type: energy_meter
+    zone_id: open-office-f2
+    metadata:
+      interval_seconds: 300
+      submeter: lighting
+      nominal_kw: 12.0
+      base_load_factor: 0.02
+
+  - device_eui: fe0c000000000004
+    name: "Plug Loads Sub-meter"
+    type: energy_meter
+    zone_id: open-office-f1
+    metadata:
+      interval_seconds: 300
+      submeter: plug
+      nominal_kw: 18.0
+
+  - device_eui: fe0c000000000005
+    name: "Server Room Power"
+    type: energy_meter
+    zone_id: server-room-f2
+    metadata:
+      interval_seconds: 60
+      submeter: plug
+      nominal_kw: 8.0
+      base_load_factor: 0.65
+
+  # ---- HVAC virtual point ----
+  - device_eui: fe0d000000000001
+    name: "Server Room HVAC Point"
+    type: hvac
+    zone_id: server-room-f2
+    metadata:
+      interval_seconds: 300
+      setpoint_c: 19.0
+
+# ---------------------------------------------------------------------------
+# Outputs + simulation knobs
+# ---------------------------------------------------------------------------
+outputs:
+  mqtt:
+    enabled: false
+    broker_host: ""
+    broker_port: 1883
+  csv:
+    enabled: true
+    output_dir: outputs
+    filename: ankara_readings.csv
+
+simulation:
+  mode: live
+  interval_seconds: 30
+  seed: 19061923   # Republic of Türkiye founding date for a stable demo

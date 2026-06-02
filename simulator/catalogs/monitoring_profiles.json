@@ -1,0 +1,86 @@
+{
+  "_comment": "Monitoring-profile catalog. Each profile expresses *what to monitor* in a room: which sensor types are required vs recommended, plus a typical density hint (sensors per N m² where applicable). The room-state engine, the device suggester, and the coverage annotation in GET /config all read this catalog. Sensor type ids must match simulator/devices catalog ids.",
+  "monitoring_profiles": [
+    {
+      "id": "basic_environmental",
+      "name": "Basic Environmental",
+      "description": "Minimal coverage for low-occupancy spaces: temperature/humidity tracking only.",
+      "required_sensor_types": ["iaq"],
+      "recommended_sensor_types": [],
+      "density_m2_per_sensor": { "iaq": 100 },
+      "notes": "Suitable for corridors, storage, hotel corridors. Keeps cost low while still trending baseline conditions."
+    },
+    {
+      "id": "iaq_standard",
+      "name": "IAQ — Standard",
+      "description": "Standard indoor-air-quality coverage: CO2 + temperature/humidity + TVOC + PM in occupied spaces.",
+      "required_sensor_types": ["iaq"],
+      "recommended_sensor_types": [],
+      "density_m2_per_sensor": { "iaq": 60 },
+      "notes": "Default for most occupied office, retail and education spaces."
+    },
+    {
+      "id": "iaq_occupancy",
+      "name": "IAQ + Occupancy",
+      "description": "IAQ paired with people-counting so CO2 rises can be attributed to occupancy spikes.",
+      "required_sensor_types": ["iaq", "entry_exit_counter"],
+      "recommended_sensor_types": ["occupancy_sensor"],
+      "density_m2_per_sensor": { "iaq": 60, "entry_exit_counter": 200 },
+      "notes": "Required for meeting rooms, classrooms, and any space where occupancy explains IAQ variation."
+    },
+    {
+      "id": "hvac_operational",
+      "name": "HVAC Operational",
+      "description": "HVAC virtual points (supply/return temp, fan state, setpoint) for operational monitoring and fault detection.",
+      "required_sensor_types": ["hvac"],
+      "recommended_sensor_types": ["iaq"],
+      "density_m2_per_sensor": { "hvac": 250 },
+      "notes": "Typically one HVAC point per AHU/FCU zone. Pair with IAQ to correlate complaints with HVAC state."
+    },
+    {
+      "id": "energy_basic",
+      "name": "Energy — Basic",
+      "description": "Single energy meter for the space — total kWh + active power.",
+      "required_sensor_types": ["energy_meter"],
+      "recommended_sensor_types": [],
+      "density_m2_per_sensor": { "energy_meter": 500 },
+      "notes": "Sub-metered floors, cold rooms, server rooms."
+    },
+    {
+      "id": "energy_advanced",
+      "name": "Energy — Advanced",
+      "description": "Detailed energy sub-metering paired with HVAC and IAQ for kWh-per-CO2-ppm style analytics.",
+      "required_sensor_types": ["energy_meter", "hvac"],
+      "recommended_sensor_types": ["iaq"],
+      "density_m2_per_sensor": { "energy_meter": 200, "hvac": 250 },
+      "notes": "Data centers, large mechanical rooms, hospital plant rooms."
+    },
+    {
+      "id": "guest_room_advanced",
+      "name": "Guest Room — Advanced",
+      "description": "Hotel guest-room bundle: IAQ + occupancy + HVAC operational point for comfort + energy.",
+      "required_sensor_types": ["iaq", "occupancy_sensor"],
+      "recommended_sensor_types": ["hvac"],
+      "density_m2_per_sensor": { "iaq": 30, "occupancy_sensor": 30 },
+      "notes": "One sensor per guest room. Drives HVAC setbacks when unoccupied."
+    },
+    {
+      "id": "mall_people_flow",
+      "name": "Mall / People Flow",
+      "description": "People-counting first, IAQ second — used for retail footfall, mall entrances and food courts.",
+      "required_sensor_types": ["entry_exit_counter"],
+      "recommended_sensor_types": ["iaq"],
+      "density_m2_per_sensor": { "entry_exit_counter": 150 },
+      "notes": "Pair with IAQ on lobbies / food courts to explain CO2 and PM excursions."
+    },
+    {
+      "id": "research_advanced",
+      "name": "Research / Lab — Advanced",
+      "description": "Lab-grade coverage: IAQ + HVAC operational point (fume hood / exhaust state) + energy.",
+      "required_sensor_types": ["iaq", "hvac"],
+      "recommended_sensor_types": ["energy_meter"],
+      "density_m2_per_sensor": { "iaq": 30, "hvac": 100 },
+      "notes": "Surfaces VOC events and ventilation failures simultaneously."
+    }
+  ]
+}

@@ -1,0 +1,37 @@
+# Energy meter rules.
+metrics:
+  active_power:
+    physical_min: -500.0     # negative only allowed if export_to_grid scenario set
+    physical_max: 50000.0    # kW; tune per building
+    allow_negative_with_scenario: export_to_grid
+  active_energy:
+    physical_min: 0.0
+    monotonic_non_decreasing: true
+    allow_decrease_with_scenario: meter_reset
+  voltage_1: { physical_min: 180.0, physical_max: 260.0 }
+  voltage_2: { physical_min: 180.0, physical_max: 260.0 }
+  voltage_3: { physical_min: 180.0, physical_max: 260.0 }
+  current_1: { physical_min: 0.0,   physical_max: 2000.0 }
+  current_2: { physical_min: 0.0,   physical_max: 2000.0 }
+  current_3: { physical_min: 0.0,   physical_max: 2000.0 }
+  frequency:
+    physical_min: 49.0
+    physical_max: 51.0
+    grid_nominal: 50.0
+  power_factor:
+    physical_min: 0.0
+    physical_max: 1.0
+    expected_min: 0.75
+    expected_max: 1.0
+    allow_low_with_scenario: power_quality_issue
+
+# P ≈ √3 · V_avg · I_avg · pf (3-phase) — used as a soft sanity check.
+power_consistency:
+  enabled: true
+  tolerance_ratio: 0.40   # 40% slack — only catches gross mismatches
+
+# Hierarchy: child meters should sum to ≈ parent meter.
+hierarchy:
+  residual_min: -0.10     # main may be up to 10% LOWER than children (ok)
+  residual_max:  0.30     # main may be up to 30% HIGHER (untracked load)
+  window_minutes: 15      # check on rolling windows

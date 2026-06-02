@@ -1,0 +1,9 @@
+/* Project-specific overrides on top of Tailwind CDN.
+   Keep this file small — prefer Tailwind utilities in templates. */
+
+/* Smooth HTMX swap transitions for status pills */
+.htmx-swapping { opacity: 0.4; transition: opacity 120ms ease-out; }
+.htmx-settling { opacity: 1;   transition: opacity 120ms ease-in; }
+
+/* Slightly tighter monospace for ids and timestamps */
+code, .font-mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }

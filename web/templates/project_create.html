@@ -1,0 +1,94 @@
+{% extends "layout.html" %}
+
+{% block title %}New Project · {{ app_name }}{% endblock %}
+{% block header_title %}New Project{% endblock %}
+
+{% block content %}
+  <div class="max-w-2xl">
+    <div class="mb-6">
+      <a href="/" class="text-sm text-gray-500 hover:text-gray-700">← Back to Dashboard</a>
+      <h2 class="text-2xl font-semibold text-gray-900 mt-2">Create a new project</h2>
+      <p class="text-sm text-gray-500 mt-1">
+        These details seed the building, scenarios, and recommended device count.
+        You can refine everything afterwards.
+      </p>
+    </div>
+
+    <form method="post" action="/projects/new"
+          class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div class="p-6 space-y-5">
+
+        <div>
+          <label class="block text-sm font-medium text-gray-700">Project name</label>
+          <input type="text" name="name" required
+                 value="{{ form_values.name }}"
+                 class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-green-500" />
+          <p class="mt-1 text-xs text-gray-500">Shown on the dashboard. Used to derive the project id.</p>
+          {% if form_errors.name %}<p class="mt-1 text-xs text-red-600">{{ form_errors.name }}</p>{% endif %}
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Building type</label>
+            <select name="building_type"
+                    class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-green-500">
+              {% for opt in ["office", "school", "hospital", "retail", "residential", "industrial"] %}
+                <option value="{{ opt }}" {% if form_values.building_type == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+            <p class="mt-1 text-xs text-gray-500">Affects scenario library and recommended sensors.</p>
+          </div>
+
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Demo depth</label>
+            <select name="demo_depth"
+                    class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-green-500">
+              {% for opt in ["light", "standard", "deep"] %}
+                <option value="{{ opt }}" {% if form_values.demo_depth == opt %}selected{% endif %}>{{ opt|capitalize }}</option>
+              {% endfor %}
+            </select>
+            <p class="mt-1 text-xs text-gray-500">Controls device count and scenario richness.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">City</label>
+            <input type="text" name="city" value="{{ form_values.city }}"
+                   class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-green-500" />
+            <p class="mt-1 text-xs text-gray-500">Used for outdoor weather baselines.</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Timezone</label>
+            <input type="text" name="timezone" value="{{ form_values.timezone }}"
+                   class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-green-500" />
+            <p class="mt-1 text-xs text-gray-500">IANA tz, e.g. <code>Europe/Istanbul</code>. Drives occupancy schedules.</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Total area (m²)</label>
+            <input type="number" name="area_m2" min="0" step="1" value="{{ form_values.area_m2 }}"
+                   class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-green-500" />
+            <p class="mt-1 text-xs text-gray-500">Influences recommended device count.</p>
+          </div>
+          <div>
+            <label class="block text-sm font-medium text-gray-700">Floors</label>
+            <input type="number" name="floors" min="1" max="200" step="1" value="{{ form_values.floors }}"
+                   class="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:ring-green-500" />
+            <p class="mt-1 text-xs text-gray-500">Number of floors in the building.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-2 p-4 border-t border-gray-100 bg-gray-50 rounded-b-2xl">
+        <a href="/" class="text-sm text-gray-600 hover:text-gray-800 px-3 py-2">Cancel</a>
+        <button type="submit"
+                class="inline-flex items-center gap-2 rounded-lg bg-green-600 hover:bg-green-700 text-white text-sm font-medium px-4 py-2 shadow-sm">
+          Create project
+        </button>
+      </div>
+    </form>
+  </div>
+{% endblock %}
