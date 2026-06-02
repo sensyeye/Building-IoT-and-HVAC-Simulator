@@ -31,6 +31,13 @@ env
 *.log
 *.jsonl
 
+# Belt-and-suspenders: explicitly RE-INCLUDE the simulator's Python
+# source tree even if a parent rule above tried to exclude it.
+!simulator/
+!simulator/**
+!api/
+!api/**
+
 # Tests aren't needed in the runtime image
 tests
 
