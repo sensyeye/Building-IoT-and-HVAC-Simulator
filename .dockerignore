@@ -23,10 +23,11 @@ env
 .idea
 .DS_Store
 
-# Local data + generated artifacts (must be mounted at runtime)
-data
-outputs
-output
+# Local data + generated artifacts (anchored to repo root so we don't
+# accidentally exclude `simulator/outputs/` which is a Python module).
+/data
+/outputs
+/output
 *.log
 *.jsonl
 
